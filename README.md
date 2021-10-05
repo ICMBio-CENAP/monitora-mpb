@@ -8,7 +8,7 @@ Analise de dados de concessões florestais na Floresta Nacional do Jamari
 
 ```florestal-basico-monitora``` Códigos para análise exploratória dos dados do protocolo florestal básico do Programa Monitora.
 
-```data``` Dados processados. Os dados brutos estão no Google drive e são acesssados pelos códigos para análise. 
+```data``` Dados processados. Os dados brutos estão numa pasta do Google drive e são acesssados pelos códigos para análise. 
 
 ```bin``` Caixa de ferramentas: códigos e funções úteis.
 
