@@ -1,16 +1,16 @@
-# jamari-Monitora-MPB
+# ICMBio-Monitora - IPE-MPB
 
 Analise de dados de concessões florestais na Floresta Nacional do Jamari
 
 
 ### Descrição
-```src``` Contém os códigos para as análises.
+```manejo-florestal-jamari``` Códigos para análises sopbre efeito do manejo florestal sobre vertebrados na FLONA do Jamari.
 
 ```data``` Dados brutos e processados. 
 
 ```bin``` Códigos e funções úteis.
 
-```results``` Resultados das análises.
+```results-manejo-florestal``` Resultados das análises sobre o manejo florestal.
 
 # Instruções para instalar o repositório localmente no R
 Se você pretende usar o R mas nunca fez isso antes, veja abaixo as instruções para instalar o R, RStudio e Git.
