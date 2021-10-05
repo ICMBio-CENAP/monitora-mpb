@@ -4,13 +4,15 @@ Analise de dados de concessões florestais na Floresta Nacional do Jamari
 
 
 ### Descrição
-```manejo-florestal-jamari``` Códigos para análises sopbre efeito do manejo florestal sobre vertebrados na FLONA do Jamari.
+```manejo-florestal-jamari``` Códigos para análises sobre efeito do manejo florestal sobre vertebrados na FLONA do Jamari.
 
-```data``` Dados brutos e processados. 
+```florestal-basico-monitora``` Códigos para análise exploratória dos dados do protocolo florestal básico do Programa Monitora.
 
-```bin``` Códigos e funções úteis.
+```data``` Dados processados. Os dados brutos estão no Google drive e são acesssados pelos códigos para análise. 
 
-```results-manejo-florestal``` Resultados das análises sobre o manejo florestal.
+```bin``` Caixa de ferramentas: códigos e funções úteis.
+
+```models``` Resultados das análises sobre o manejo florestal na flona Jamari.
 
 # Instruções para instalar o repositório localmente no R
 Se você pretende usar o R mas nunca fez isso antes, veja abaixo as instruções para instalar o R, RStudio e Git.
