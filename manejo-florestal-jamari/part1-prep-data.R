@@ -112,6 +112,7 @@ target <- as.factor(paste(S$placename, S$sampling_event, sep="_"))
 Y <- Y[match(target, row.names(Y)),]
 Y <- as_tibble(Y)
 #rownames(Y) <- rownames(S)
+#Y$placename <- S$placename
 Y
 
 
@@ -126,7 +127,9 @@ eff <- eff[match(target, eff$placename),] # match to ensure row order in eff is 
 eff
 #Y <- round(Y/eff$effort, 5) # correct Y for effort
 # instead of correcting for effort, lets add effort as a covariate to X
-X <- left_join(X, eff[,c("placename", "effort")], by="placename")
+#X <- left_join(X, eff[,c("placename", "effort")], by="placename")
+X <- X %>%
+  mutate(effort = eff$effort)
 X
 
 
@@ -192,15 +195,17 @@ TP # check
 
 ## Save SXY file as csv and rds
 dim(S); dim(X); dim(Y)
+X$placename <- NULL
+#Y$placename <- NULL
 SXY <- cbind(S,X,Y)
 dim(SXY)
 write.csv(SXY, file=here("data", "SXY.csv"), row.names = FALSE) 
 #saveRDS(SXY, file=here("data", "SXY.rds")) 
 
 ## save as csv (csv is in gitignore so will not be uploaded to github)
-write.csv(S, file=here("data", "S.csv"), row.names = FALSE) 
-write.csv(X, file=here("data", "X.csv"), row.names = FALSE) 
-write.csv(Y, file=here("data", "Y.csv"), row.names = FALSE) 
+#write.csv(S, file=here("data", "S.csv"), row.names = FALSE) 
+#write.csv(X, file=here("data", "X.csv"), row.names = FALSE) 
+#write.csv(Y, file=here("data", "Y.csv"), row.names = FALSE) 
 write.csv(TP, file=here("data", "TP.csv"), row.names = FALSE) 
 
 ## save as rds
