@@ -29,14 +29,14 @@ require(dplyr)
   #get the dimensions of the matrix
   
   #list if sanpling units
-  cams <- unique(data$Camera.Trap.Name)
+  cams <- unique(data$placename)
   cams <- sort(cams)
   rows <- length(cams)
   species <- unique(data$bin)
   #start and end dates of sampling periods
   #data <- dplyr::filter(data, Sampling.Period == year)
-  min <- min(data$Start.Date)
-  max <- max(data$End.Date)
+  min <- min(data$start_date)
+  max <- max(data$end_date)
   cols <- max - min + 1
   
   #sampling period
@@ -44,23 +44,23 @@ require(dplyr)
   mat<-matrix(NA,rows,cols,dimnames=list(cams,as.character(date.header)))
   
   #for all cameras, determine the open and close date and mark in the matrix
-  start.dates<-tapply(as.character(data$Start.Date),data$Camera.Trap.Name,unique)
-  start.dates <- start.dates[start.dates != ""]
-  nms<-names(start.dates)
-  start.dates<-ymd(start.dates)
+  start_dates<-tapply(as.character(data$start_date),data$placename,unique)
+  start_dates <- start_dates[start_dates != ""]
+  nms<-names(start_dates)
+  start_dates<-ymd(start_dates)
   
-  names(start.dates)<-nms
-  end.dates<-tapply(as.character(data$End.Date),data$Camera.Trap.Name,unique)
-  end.dates <- end.dates[end.dates != ""]
-  end.dates<-ymd(end.dates)
+  names(start_dates)<-nms
+  end_dates<-tapply(as.character(data$end_date),data$placename,unique)
+  end_dates <- end_dates[end_dates != ""]
+  end_dates<-ymd(end_dates)
   
-  names(end.dates)<-nms
+  names(end_dates)<-nms
   
   #outline the sampling periods for each camera j
-  for(j in 1:length(start.dates)){
+  for(j in 1:length(start_dates)){
     #for each camera beginning and end of sampling
-    low<-which(date.header==start.dates[j])
-    hi<-which(date.header==end.dates[j])
+    low<-which(date.header==start_dates[j])
+    hi<-which(date.header==end_dates[j])
     if(length(low)+length(hi)>0){
       indx<-seq(from=low,to=hi)
       mat[j,indx]<-0
@@ -73,8 +73,8 @@ require(dplyr)
   for(i in 1:length(species)){
     indx<-which(data$bin==species[i])
     #dates and cameras when/where the species was photographed
-    dates<-data$Photo.Date[indx]
-    cameras<-data$Camera.Trap.Name[indx]
+    dates<-data$photo_date[indx]
+    cameras<-data$placename[indx]
     dates.cameras<-data.frame(dates,cameras)
     #unique combination of dates and cameras 
     dates.cameras<-unique(dates.cameras)
@@ -109,17 +109,17 @@ f.check.NA.breaks<-function(vector){
 	}
 	
 f.start.minus.end<-function(data){
-	data$End.Date-data$Start.Date
+	data$end_date-data$start_date
 	}
 f.start<-function(data){
-	data$Start.Date
+	data$start_date
 	}
 f.end<-function(data){
-	data$End.Date
+	data$end_date
 	}
 
 f.picture.dates<-function(data){
-	data$Photo.Date
+	data$photo_date
 	}
 f.picture.span <-function(data){
 	max(data)-min(data)
@@ -133,20 +133,20 @@ f.picture.max<-function(data){
 #function to fix the start/stop time of a camera if it is incorrectly entered	
 f.start.stop.date.fixer<-function(data){
 	
-	cam.start.date<-by(data,data$Sampling.Unit.Name,f.start)
-	cam.start.date<-lapply(cam.start.date,unique)
-	cam.end.date<-by(data,data$Sampling.Unit.Name,f.end)
-	cam.end.date<-lapply(cam.end.date,unique)
+	cam.start_date<-by(data,data$placename,f.start)
+	cam.start_date<-lapply(cam.start_date,unique)
+	cam.end_date<-by(data,data$placename,f.end)
+	cam.end_date<-lapply(cam.end_date,unique)
 	
-	#cam.span<-(by(data,data$Sampling.Unit.Name,f.start.minus.end))
+	#cam.span<-(by(data,data$placename,f.start.minus.end))
 	#cam.span<-lapply(cam.span,unique)
 	
-	pic.span<-by(data,data$Sampling.Unit.Name,f.picture.dates)
+	pic.span<-by(data,data$placename,f.picture.dates)
 	min.pic<-lapply(pic.span,f.picture.min)
 	max.pic<-lapply(pic.span,f.picture.max)
 	#pic.span<-lapply(pic.span,f.picture.span)
 	
-	indx<-which(as.numeric(cam.start.date)-as.numeric(min.pic)>0 |as.numeric(cam.end.date)-as.numeric(max.pic)<0)
+	indx<-which(as.numeric(cam.start_date)-as.numeric(min.pic)>0 |as.numeric(cam.end_date)-as.numeric(max.pic)<0)
 	#figure out which camera has the problem
 	#indx<-which(as.numeric(cam.span)-as.numeric(pic.span)<=0)
 	if(length(indx)){
@@ -154,9 +154,9 @@ f.start.stop.date.fixer<-function(data){
 	print("There are problems with the following cameras:")
 	print(cam.id)}
 	#for(i in 1:length(indx)){
-	#	index<-which(data$Sampling.Unit.Name==cam.id[i])
-	#	data$Start.Date[index]<-min.pic[[indx[i]]]
-	#	data$End.Date[index]<-max.pic[[indx[i]]]
+	#	index<-which(data$placename==cam.id[i])
+	#	data$start_date[index]<-min.pic[[indx[i]]]
+	#	data$end_date[index]<-max.pic[[indx[i]]]
 	#	
 	#	}
 		}
@@ -194,38 +194,38 @@ DF
 f.fix.data <- function(data){
         require(lubridate)
         
-        data$Photo.Date <- as.character(data$Photo.Date)
+        data$photo_date <- as.character(data$photo_date)
         
-        data$Photo.time <- as.character(data$Photo.time)
+        data$photo_time <- as.character(data$photo_time)
 
 # this line stores the date and time info for each photo into a single object
   
-        time.date <- ymd_hms(paste(data$Photo.Date, data$Photo.time, sep=" "))
+        time.date <- ymd_hms(paste(data$photo_date, data$photo_time, sep=" "))
         
-# Photo.date and Photo.time need to be time objects
-        data$Photo.Date <- ymd(data$Photo.Date)
+# photo_date and photo_time need to be time objects
+        data$photo_date <- ymd(data$photo_date)
         
-        data$Photo.time <- hms(data$Photo.time)
+        data$photo_time <- hms(data$photo_time)
         
 #split the date from the time for the Camera start date and time
 
-        data$Camera.Start.Date <- ymd(as.character(data$Camera.Start.Date))
+        data$start_date <- ymd(as.character(data$start_date))
   
-        qwe <- data$Camera.Start.Date
+        qwe <- data$start_date
   
         qwe <- ymd(paste(year(qwe),"-",month(qwe),"-",day(qwe),sep=""))
   
-        data <- data.frame(data,Start.Date = qwe)
+        data <- data.frame(data,start_date = qwe)
 	
 #Now do the same but for the End date and time of each camera trap
 
-        data$Camera.End.Date <- ymd(as.character(data$Camera.End.Date))
+        data$end_date <- ymd(as.character(data$end_date))
         
-	qwe <- data$Camera.End.Date
+	qwe <- data$end_date
 
 	qwe <- ymd(paste(year(qwe),"-",month(qwe),"-",day(qwe),sep=""))
   
-	data <- data.frame(data,End.Date=qwe)
+	data <- data.frame(data,end_date=qwe)
 
 #create new variable with binomial - genus species
   
@@ -278,7 +278,7 @@ f.separate<-function(data,thresh){
 #test function; not usually used	
 f.test.sep<-function(cond){
 	l<-length(cond)
-	#interval<-c(data$Photo.time[2:l],NA)-data$Photo.time
+	#interval<-c(data$photo_time[2:l],NA)-data$photo_time
 	ev<-1;res<-numeric()
 	#cond<-interval>5
 	for(i in 1:(l-1)){
@@ -294,7 +294,7 @@ f.test.sep<-function(cond){
 	
 #Order the data by Sampling unit name and photo raw name. This will order images chronologically
 f.order.data<-function(data){
-	indx<-order(data$sampling_event,data$Camera.Trap.Name,data$timestamp)
+	indx<-order(data$sampling_event,data$placename,data$timestamp)
 	data<-data[indx,]
 	data
 	}
@@ -306,7 +306,7 @@ f.separate.events<-function(data,thresh){
   if(length(indx)>0)
     data<-data[-indx,]
   e.data<-f.separate(data$timestamp,thresh)
-data.frame(data,grp=paste(data$sampling_event,".",data$Camera.Trap.Name,".",e.data,sep=""))
+data.frame(data,grp=paste(data$sampling_event,".",data$placename,".",e.data,sep=""))
 
 	}
 #Simulation to explore the effect of changing the threshold on the number
@@ -350,10 +350,10 @@ f.graph.temp<-function(species,spname,nbins) {
 f.events<-function(data){
   temp<-mean(data$Temperature)
   site<-unique(as.character(data$Site.Name))
-  date<-min(as.character(data$Photo.Date))
-  time<-min(as.character(data$Photo.time))
+  date<-min(as.character(data$photo_date))
+  time<-min(as.character(data$photo_time))
   sp<-unique(as.character(data$bin))
-  sun<-unique(as.character(data$Sampling.Unit.Name))
+  sun<-unique(as.character(data$placename))
   lat<-unique(data$Latitude)
   lon<-unique(data$Longitude)
   sap<-unique(data$Sampling.Period)
@@ -366,7 +366,7 @@ f.events.dataframe<-function(data){
   require(chron)
   qwe<-by(data,data$grp,f.events)
   qwe<-as.data.frame(do.call("rbind",qwe))
-  names(qwe)<-c("Site.Name","Date","Time","Sampling.Period","Temperature","bin","Sampling.Unit.Name","Latitude","Longitude","Moon.Phase")
+  names(qwe)<-c("Site.Name","Date","Time","Sampling.Period","Temperature","bin","placename","Latitude","Longitude","Moon.Phase")
   qwe$Date<-as.Date(chron(dates=as.character(qwe$Date),format=c(dates="y-m-d")))
   qwe$Time<-as.POSIXct(as.character(qwe$Time),format="%H:%M:%S")
   qwe$Temperature<-as.numeric(as.character(qwe$Temperature))
@@ -432,7 +432,7 @@ f.assign.missing<-function(SuName,SuPeriod,startDate,endDate,data){
 }
 
 f.minusBirds<-function(data){
-  indx<-which(data$Class=="AVES")
+  indx<-which(data$Class=="Aves")
   data<-data[-indx,]
   data<-f.correct.DF(data)
 }

@@ -8,7 +8,7 @@ library(gsheet)
 ## ---- source this file
 source(here("bin", "ahumada_codes.R"))
 
-#----- read and prepare data
+#----- read data
 
 # read Jamari Wildlife Insights data from Google Drive
 deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1qzexPLq39Fc2xfTco1C_p2Hpj-h3rhyXEQx-lyovEy8/edit?usp=sharing"))
@@ -26,15 +26,17 @@ jamari$bin <- paste(jamari$genus, jamari$species, sep=" ") # binomial names
 jamari$placename <- as.factor(jamari$placename)
 jamari$start_date <- as.Date(jamari$start_date)
 jamari$end_date <- as.Date(jamari$end_date)
-#jamari$timestamp <- as.Date(jamari$timestamp)
+jamari$photo_date <- as.Date(jamari$timestamp)
+jamari$photo_time <- strftime(jamari$timestamp, format="%H:%M:%S")
 jamari$sampling_event <- format(jamari$start_date, format="%Y") 
+jamari$timestamp <- as.POSIXct(jamari$timestamp)
 
 
 # ---- filter independent records
 # Group by events that are 60 minutes apart (and from different species)
 jamari <- f.separate.events(jamari, 60)
-# filter retaining only independent records (distinctive combinations of bin and grp)
-jamari <- distinct(jamari, species, grp, .keep_all = TRUE)
+# filter retaining only independent records (distinctive combinations of genus and grp)
+jamari <- distinct(jamari, genus, grp, .keep_all = TRUE)
 
 # work only with mammal photos
 #jamari <- filter(jamari, Class == "Mammalia") # keeping only species in species.list
@@ -71,73 +73,73 @@ jamari <- filter(jamari, genus %in% generaToUse) # keeping only species in speci
 # and in X those that you think should be modeled as fixed effects.
 # Don't worry if you are not sure which one is the "right choice", we will discuss this with you.
 
+
 ##----- S: study design -----
 S <- distinct(jamari, placename, sampling_event, longitude, latitude)
-S <- S[, c("Camera.Trap.Name", "Sampling.Event", "Longitude", "Latitude", "Project.Name")] # reorder columns to match other dataframes
+S <- S[, c("placename", "sampling_event", "longitude", "latitude")] # reorder columns to match other dataframes
 # NB! some coordinates are wrong, don't forget to fix it later!!!
-
-# NB! S was initially designed for a multi-year analysis, however, our covariates are static among years
-# So let us simplify S so that there is a single entry per site
+# NB! if we decide to run static analysis, we will have to simplify S so that there is a single entry per site
 #S <- distinct(S, placename, longitude, latitude)
 #View(S)
-dim(S) # check
+#dim(S) # check
+S <- as_tibble(S)
+S
 
-#----- X: covariates
+
+#----- X: covariates -----
 # NB! using a generic covariates file just for this test
 # X must have the same number of rows as S and one column for each covariate
-X <- read_csv(here("data", "variables.csv"))
+#X <- read_csv(here("data", "variables.csv"))
+X <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
 X <- X %>% 
   rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
+  filter(placename %in% S$placename) %>%
+  mutate(placename=as.factor(placename)) %>%
   select(placename, elevation, slope, dist_water, hfi)
-
-# put sites in same order as S
-X <- X[match(S$placename, X$placename),]
+target <- S$placename
+X <- X[match(target, X$placename),] # put sites in same order as S
 #rownames(X) <- rownames(S)
-X
+X # check
 
-#----- Y: species data
+
+#----- Y: species data -----
 # Y must have the same number of rows as S and one column for each species
 jamari$placename_event <- paste(jamari$placename, jamari$sampling_event, sep="_")
 Y <- as.data.frame.matrix(with(jamari, table(jamari$placename_event, genus)))
 #Y <- as.data.frame.matrix(with(mammals, table(mammals$Camera.Trap.Name,Genus)))
 # do this just to ensure that S and Y rows are in the same order:
-Y$placename <- str_sub(rownames(Y), end=-6) # temporary column for matching row order
-Y <- Y[match(S$placename, Y$placename),]
+target <- as.factor(paste(S$placename, S$sampling_event, sep="_"))
+Y <- Y[match(target, row.names(Y)),]
+Y <- as_tibble(Y)
 #rownames(Y) <- rownames(S)
-#View(Y)
+Y
+
+
 
 # correct Y for sampling effort
 eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date))
 eff$effort <- as.numeric(eff$end_date - eff$start_date)
-
-# aggregate (sum) effort from all years since we are using data from several years (but not in a multi-year analysis)
+# NB! if using static (non-multi-year) analysis, aggregate (sum) effort from all years
 #eff <- aggregate(eff$effort, by=list(Camera.Trap.Name=eff$Camera.Trap.Name), FUN="sum")
-#names(eff)[2] <- "effort"
-#eff$matchcolumn <- eff$Camera.Trap.Name
-eff <- eff[match(S$placename, eff$placename),] # match to ensure row order in eff is the same as in Y
-
+target <- S$placename
+eff <- eff[match(target, eff$placename),] # match to ensure row order in eff is the same as in Y
+eff
 #Y <- round(Y/eff$effort, 5) # correct Y for effort
 # instead of correcting for effort, lets add effort as a covariate to X
 X <- left_join(X, eff[,c("placename", "effort")], by="placename")
-head(X)
-dim(X)
-#View(Y)
-#dim(Y)
+X
 
 
-#---------------
-# ELILDO PAROU AQUI 2021-10-05!!!!!!
-#---------------
-
-
-
-##----- TP: Traits data-----
+#----- TP: Traits data -----
 
 # feeding guilds: another version using EltonTraits (more recent than PanTheria)
-traits <- read.csv("/home/elildojr/Documents/r/databases/MamFuncDat.txt", sep="\t") # read elton traits table
-traits$Genus <- gsub(" .*$", "", traits$Scientific) # Create genus column in traits
-traits <- filter(traits, Genus %in% generaToUse) # keeping only species in species.list
-traits <- distinct(traits, Genus, .keep_all=TRUE) # remove duplicates in Genus
+#traits <- read.csv("/home/elildojr/Documents/r/databases/MamFuncDat.txt", sep="\t") # read elton traits table
+#traits$genus <- gsub(" .*$", "", traits$Scientific) # Create genus column in traits
+#traits <- filter(traits, genus %in% generaToUse) # keeping only species in species.list
+#traits <- distinct(traits, genus, .keep_all=TRUE) # remove duplicates in Genus
+#write.csv(traits, here("data", "traits.csv"), row.names = FALSE)
+traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1HYNHvnZAQ3NPbR58KJZRWocaA46PPVT-AtfIIkVj4uc/edit?usp=sharing"))
+traits
 
 # Assign each species to a feeding guild
 # e.g. primary consumer, secondary consumer, omnivore
@@ -155,22 +157,37 @@ traits$insectivore <- ifelse(traits$insectivore > 50, traits$insectivore <- 1, t
 traits$omnivore <- ifelse(traits$carnivore+traits$herbivore+traits$insectivore > 0, traits$omnivore <- 0, traits$omnivore <- 1)
 traits$omnivore <- ifelse(traits$carnivore+traits$herbivore > 0, traits$omnivore <- 0, traits$omnivore <- 1)
 
-traits <- traits[,c(27:31,24)] # select traits to be used (dietary classes and body mass)
-traits <- traits[match(colnames(Y), traits$Genus),] # put rows in same order as in Y columns
-traits$BodyMass.Value <- round(traits$BodyMass.Value)
+traits <- traits %>%
+  select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
+  rename(body_mass=BodyMass.Value)
+traits <- traits[match(colnames(Y), traits$genus),] # put rows in same order as in Y columns
 TP <- traits
+# !NB bird traits missing from Elton Traits
 
 
 
 ##----- Save files-----
 
-# NB! the script S1_read_data.R reveals that row 971 has missing data for both X and Y
-which(is.na(S[,3]))
-which(is.na(X[,1]))
-# this is not allowed so let us remove it from S, X and Y:
-S <- S[-c(971),] 
-X <- X[-c(971),] 
-Y <- Y[-c(971),] 
+# NB! NAs are not allowed in HMSC script so let usimput arbitrary data for the test
+which(is.na(S)) # ok, no NAs
+
+which(is.na(X)) # covariate data missing from some sites
+# let us input arbitrary values to these missing rows
+X$placename <- S$placename # use S placenames to replace NAs ...
+# ... and arbitrarily input values from 1st row to all rows with missing data 
+for(i in 1:nrow(X)) {
+  if(is.na(X[i,2])) {X[i,2:5] <- X[1,2:5] }
+}
+
+which(is.na(Y))
+
+which(is.na(TP))
+TP$genus <- colnames(Y) # use Y colnames (genera names) to replace NAs ...
+# ... and arbitrarily input values from 1st row to all rows with missing data 
+for(i in 1:nrow(TP)) {
+  if(is.na(TP[i,2])) {TP[i,2:6] <- TP[1,2:6] }
+}
+TP # check
 
 
 ## Save SXY file as csv and rds
@@ -178,7 +195,7 @@ dim(S); dim(X); dim(Y)
 SXY <- cbind(S,X,Y)
 dim(SXY)
 write.csv(SXY, file=here("data", "SXY.csv"), row.names = FALSE) 
-saveRDS(SXY, file=here("data", "SXY.rds")) 
+#saveRDS(SXY, file=here("data", "SXY.rds")) 
 
 ## save as csv (csv is in gitignore so will not be uploaded to github)
 write.csv(S, file=here("data", "S.csv"), row.names = FALSE) 
@@ -187,10 +204,10 @@ write.csv(Y, file=here("data", "Y.csv"), row.names = FALSE)
 write.csv(TP, file=here("data", "TP.csv"), row.names = FALSE) 
 
 ## save as rds
-saveRDS(S, file=here("data", "S.rds")) 
-saveRDS(X, file=here("data", "X.rds")) 
-saveRDS(Y, file=here("data", "Y.rds")) 
-saveRDS(TP, file=here("data", "TP.rds")) 
+#saveRDS(S, file=here("data", "S.rds")) 
+#saveRDS(X, file=here("data", "X.rds")) 
+#saveRDS(Y, file=here("data", "Y.rds")) 
+#saveRDS(TP, file=here("data", "TP.rds")) 
 
 
 
