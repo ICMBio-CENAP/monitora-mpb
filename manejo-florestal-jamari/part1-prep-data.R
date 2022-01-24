@@ -17,8 +17,9 @@ images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1FJIJH8So
 images
 
 # get coordinates and start/end dates from deployments file and add this into images
-jamari <- left_join(images, deployments[,c("deployment_id", "placename", "longitude", "latitude", "start_date","end_date")])
-jamari <- jamari[order(jamari$placename),] # order by camera trap name
+jamari <- left_join(images, deployments[,c("deployment_id", "placename", 
+                                   "longitude", "latitude", "start_date","end_date")]) %>%
+  arrange(placename) # order by camera trap name # jamari[order(jamari$placename),]
 jamari
 
 # some fixes
@@ -77,6 +78,7 @@ jamari <- filter(jamari, genus %in% generaToUse) # keeping only species in speci
 ##----- S: study design -----
 S <- distinct(jamari, placename, sampling_event, longitude, latitude)
 S <- S[, c("placename", "sampling_event", "longitude", "latitude")] # reorder columns to match other dataframes
+head(S)
 # NB! some coordinates are wrong, don't forget to fix it later!!!
 # NB! if we decide to run static analysis, we will have to simplify S so that there is a single entry per site
 #S <- distinct(S, placename, longitude, latitude)
@@ -165,13 +167,14 @@ traits <- traits %>%
   rename(body_mass=BodyMass.Value)
 traits <- traits[match(colnames(Y), traits$genus),] # put rows in same order as in Y columns
 TP <- traits
+TP
 # !NB bird traits missing from Elton Traits
 
 
 
 ##----- Save files-----
 
-# NB! NAs are not allowed in HMSC script so let usimput arbitrary data for the test
+# NB! NAs are not allowed in HMSC script so let input arbitrary data for the test
 which(is.na(S)) # ok, no NAs
 
 which(is.na(X)) # covariate data missing from some sites

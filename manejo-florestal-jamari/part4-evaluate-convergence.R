@@ -77,3 +77,4 @@ psrf.V = gelman.diag(mpost$V,multivariate=FALSE)$psrf
 psrf.V
 psrf.rho = gelman.diag(mpost$Rho,multivariate=FALSE)$psrf
 psrf.rho
+

@@ -4,7 +4,7 @@ library(here)
 
 # You need to provide an SXY file.
 # The files TP and P are optional, so indicate with TRUE/FALSE if they are included or not
-#is.TP = TRUE
+is.TP = TRUE
 is.P = FALSE
 
 # READING IN SXY: study design (S) and/or covariates (X) and species data (Y) 
