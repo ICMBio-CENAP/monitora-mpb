@@ -23,14 +23,16 @@ jamari <- left_join(images, deployments[,c("deployment_id", "placename",
 jamari
 
 # some fixes
-jamari$bin <- paste(jamari$genus, jamari$species, sep=" ") # binomial names
-jamari$placename <- as.factor(jamari$placename)
-jamari$start_date <- as.Date(jamari$start_date)
-jamari$end_date <- as.Date(jamari$end_date)
-jamari$photo_date <- as.Date(jamari$timestamp)
-jamari$photo_time <- strftime(jamari$timestamp, format="%H:%M:%S")
-jamari$sampling_event <- format(jamari$start_date, format="%Y") 
-jamari$timestamp <- as.POSIXct(jamari$timestamp)
+jamari <- jamari %>%
+  mutate(bin = paste(genus, species, sep=" "),
+         placename = as.factor(placename),
+         start_date = as.Date(start_date),
+         end_date = as.Date(end_date),
+         photo_date = as.Date(timestamp),
+         photo_time = strftime(timestamp, format="%H:%M:%S"),
+         sampling_event = format(start_date, format="%Y"), 
+         timestamp = as.POSIXct(timestamp)
+  )
 
 
 # ---- filter independent records
@@ -43,9 +45,16 @@ jamari <- distinct(jamari, genus, grp, .keep_all = TRUE)
 #jamari <- filter(jamari, Class == "Mammalia") # keeping only species in species.list
 
 #---- check and fix species IDs
-table(jamari$bin) # checking number of records per species
+# number of records per species
+jamari %>%
+  group_by(bin) %>%
+  count() %>%
+  arrange(desc(n)) %>%
+  print(n=Inf)
+
+# number of sites where each species was recorded
 rowSums(table(jamari$bin, by=jamari$location) != 0) # number of sites where each species was recorded
-unique(jamari$bin) # a list of recorded species to create species.list
+sort(unique(jamari$bin)) # a list of recorded species to create species.list
 
 #NB!fix species names pending, for now let us proceed using genus:
 # select genera amenable to camera trapping (i.e., terrestrial > 0.5 kg)
@@ -171,6 +180,24 @@ TP
 # !NB bird traits missing from Elton Traits
 
 
+#-------------- TESTE
+# if using traits from F. Lima table, skip L.159-180
+traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
+
+traits <- traits %>%
+  mutate(bin = gsub("_", " ", especies)) %>%
+  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
+  relocate(bin, .before = especies) %>%
+  select(-especies)
+
+species <- tibble(bin = colnames(Y))
+species
+
+traits %>% left_join(traits, species, by = grepl(bin))
+
+traits <- traits[match(colnames(Y), traits$bin),] # put rows in same order as in Y columns
+TP <- traits
+#-------------- FIM TESTE
 
 ##----- Save files-----
 
