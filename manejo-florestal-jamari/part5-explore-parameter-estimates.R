@@ -78,11 +78,17 @@ plotGamma(m, post=postGamma, param="Support", supportLevel = 0.95, covNamesNumbe
 # Note that with measure="T", we have set index=2, to select the second trait, which is that of CN (the first one is the intercept)
 
 Gradient = constructGradient(m,focalVariable = "elevation")
+predY = predict(m,Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
+plotGradient(m, Gradient, pred=predY, measure="T", index=2, showData = TRUE,  q = prob) # prob should be q
+
 Gradient = constructGradient(m,focalVariable = "dist_water")
 predY = predict(m,Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
 plotGradient(m, Gradient, pred=predY, measure="T", index=2, showData = TRUE,  q = prob) # prob should be q
+
 
 # To ask how much C:N ratio explains out of the variation in species niches and occurrences,
 # we next compute the variance partitioning.

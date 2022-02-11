@@ -78,3 +78,19 @@ psrf.V
 psrf.rho = gelman.diag(mpost$Rho,multivariate=FALSE)$psrf
 psrf.rho
 
+
+
+
+partition = createPartition(model.abu, nfolds = 2,
+                            column = "placename")
+partition
+
+MF = list()
+MFCV = list()
+for (i in 1:3){
+  preds = computePredictedValues(models[[i]])
+  MF[[i]] = evaluateModelFit(hM = models[[i]], predY = preds)
+  preds = computePredictedValues(models[[i]],
+                                 partition = partition)
+  MFCV[[i]] = evaluateModelFit(hM = models[[i]], predY = preds)
+}

@@ -4,20 +4,21 @@ library(here)
 
 # You need to provide an SXY file.
 # The files TP and P are optional, so indicate with TRUE/FALSE if they are included or not
-is.TP = TRUE
-is.P = FALSE
+is.TP <- TRUE
+is.P <- FALSE
 
 # READING IN SXY: study design (S) and/or covariates (X) and species data (Y) 
-SXY = read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
+SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # Modify the next three lines to split your SXY file to components that relate to
 # S: study design, including units of study and their possible coordinates (named as Route_x and Route_y to indicate that they relate to the units of Route)
 # X: covariates to be used as predictors
 # Y: species data
 # If you don't have variables that define the study design, indicate this by S=NULL
 # If you don't have covariate data, indicate this by X=NULL
-S=SXY[,1:4]
-X=SXY[,5:9]
-Y=SXY[,10:40]
+names(SXY) # check names
+S <- SXY[,1:3]
+X <- SXY[,4:10]
+Y <- SXY[,11:27]
 
 # What is not always easy is to decide what goes to S and what to X.
 # As a general rule, include in S those variables that you think should be modelled as random effect,
@@ -105,3 +106,4 @@ if(is.P){
   # Check that the data looks as it should!
   plot(P, cex=0.5)
 }
+

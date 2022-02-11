@@ -7,13 +7,14 @@ library(gsheet)
 
 ## ---- source this file
 source(here("bin", "ahumada_codes.R"))
+source(here("bin", "fix_species_names.R"))
 
 #----- read data
 
 # read Jamari Wildlife Insights data from Google Drive
-deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1qzexPLq39Fc2xfTco1C_p2Hpj-h3rhyXEQx-lyovEy8/edit?usp=sharing"))
+deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1NByCoaEnTX6Ot2cHaB3bKClGOdT-j0iIgJOpVL_onEI/edit?usp=sharing"))
 deployments
-images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1FJIJH8So5snTs9VOqtQjVd-CsQSW_52y41OSh2TzRtI/edit?usp=sharing"))
+images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1jCr2QMCE4lK78H4MW2cjJjckIQZEIdM1mAmXeZ2YtFc/edit?usp=sharing"))
 images
 
 # get coordinates and start/end dates from deployments file and add this into images
@@ -24,7 +25,7 @@ jamari
 
 # some fixes
 jamari <- jamari %>%
-  mutate(bin = paste(genus, species, sep=" "),
+  mutate(bin = factor(str_c(genus, species, sep=" ")),
          placename = as.factor(placename),
          start_date = as.Date(start_date),
          end_date = as.Date(end_date),
@@ -34,15 +35,20 @@ jamari <- jamari %>%
          timestamp = as.POSIXct(timestamp)
   )
 
+# fix species names
+jamari <- f.fix.species.names(jamari)
 
 # ---- filter independent records
 # Group by events that are 60 minutes apart (and from different species)
 jamari <- f.separate.events(jamari, 60)
-# filter retaining only independent records (distinctive combinations of genus and grp)
-jamari <- distinct(jamari, genus, grp, .keep_all = TRUE)
+jamari <- as_tibble(jamari)
 
-# work only with mammal photos
-#jamari <- filter(jamari, Class == "Mammalia") # keeping only species in species.list
+# filter retaining only independent records (distinctive combinations of genus and grp)
+# and keeping only mammals
+jamari <- jamari %>%
+  distinct(genus, grp, .keep_all = TRUE) %>%
+  filter(class == "Mammalia") %>%
+  mutate(bin = factor(bin))
 
 #---- check and fix species IDs
 # number of records per species
@@ -52,22 +58,24 @@ jamari %>%
   arrange(desc(n)) %>%
   print(n=Inf)
 
+
 # number of sites where each species was recorded
-rowSums(table(jamari$bin, by=jamari$location) != 0) # number of sites where each species was recorded
-sort(unique(jamari$bin)) # a list of recorded species to create species.list
+n_sites_per_spp <- jamari %>%
+  distinct(bin, placename) %>%
+  group_by(bin) %>%
+  count() %>%
+  arrange(desc(n)) %>%
+  print(n=Inf)
 
-#NB!fix species names pending, for now let us proceed using genus:
-# select genera amenable to camera trapping (i.e., terrestrial > 0.5 kg)
-genera <- sort(unique(jamari$genus))
-genera
-generaToUse <- c("Atelocynus", "Crypturellus", "Cuniculus", "Dasyprocta",
-                 "Dasypus", "Didelphis", "Eira", "Herpailurus", "Hydrochoerus",
-                 "Leopardus", "Mazama", "Metachirus", "Mitu", "Myrmecophaga", "Nasua",
-                 "Nothocrax", "Odontophorus", "Panthera", "Pecari", "Penelope",
-                 "Priodontes", "Procyon", "Psophia", "Puma", "Sciurus", "Speothos", "Sylvilagus",
-                 "Tamandua", "Tapirus", "Tayassu", "Tinamus")
-jamari <- filter(jamari, genus %in% generaToUse) # keeping only species in species.list
+# keep only species recorded in > 10% of sites
+spp_to_use <- n_sites_per_spp %>% 
+  filter(n >= length(unique(jamari$placename))/10) %>%
+  mutate(bin = as.character(bin)) %>%
+  pull(bin)
+spp_to_use
 
+jamari <- jamari %>%
+  filter(bin %in% spp_to_use)
 
 
 # ----Create community matrix Y
@@ -85,59 +93,70 @@ jamari <- filter(jamari, genus %in% generaToUse) # keeping only species in speci
 
 
 ##----- S: study design -----
-S <- distinct(jamari, placename, sampling_event, longitude, latitude)
-S <- S[, c("placename", "sampling_event", "longitude", "latitude")] # reorder columns to match other dataframes
-head(S)
+S <- jamari %>% distinct(placename, sampling_event, longitude, latitude) %>%
+  select(placename, sampling_event, longitude, latitude)
 # NB! some coordinates are wrong, don't forget to fix it later!!!
 # NB! if we decide to run static analysis, we will have to simplify S so that there is a single entry per site
 #S <- distinct(S, placename, longitude, latitude)
 #View(S)
-#dim(S) # check
-S <- as_tibble(S)
+dim(S) # check
 S
 
 
 #----- X: covariates -----
 # NB! using a generic covariates file just for this test
 # X must have the same number of rows as S and one column for each covariate
-#X <- read_csv(here("data", "variables.csv"))
-X <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
-X <- X %>% 
+
+# in X, the same site can appear multiple times, e.g. it can have
+# different values for a given covariable across years
+
+# e.g. logging status can vary across years for the same site
+# keep this in mind when creating the covariates file
+
+# as a test we will invent a dummy covariate that varies across years
+# to do this, let us letf_join S with our covars file and add the dummy variable
+covars <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
+covars <- covars %>% 
   rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
   filter(placename %in% S$placename) %>%
   mutate(placename=as.factor(placename)) %>%
   select(placename, elevation, slope, dist_water, hfi)
-target <- S$placename
-X <- X[match(target, X$placename),] # put sites in same order as S
-#rownames(X) <- rownames(S)
-X # check
+covars
+
+# create X using left_join
+X <- S %>%
+  left_join(covars, by = "placename") %>%
+  mutate(dummy_variable = runif(nrow(S), 0,4))
+X
 
 
 #----- Y: species data -----
 # Y must have the same number of rows as S and one column for each species
-jamari$placename_event <- paste(jamari$placename, jamari$sampling_event, sep="_")
-Y <- as.data.frame.matrix(with(jamari, table(jamari$placename_event, genus)))
-#Y <- as.data.frame.matrix(with(mammals, table(mammals$Camera.Trap.Name,Genus)))
-# do this just to ensure that S and Y rows are in the same order:
-target <- as.factor(paste(S$placename, S$sampling_event, sep="_"))
-Y <- Y[match(target, row.names(Y)),]
-Y <- as_tibble(Y)
-#rownames(Y) <- rownames(S)
-#Y$placename <- S$placename
+jamari <- jamari %>%
+  mutate(placename_event  = str_c(placename, sampling_event, sep="_"))
+
+Y <- jamari %>% group_by(placename_event, bin) %>%
+  count() %>%
+  separate(placename_event, c("placename", "sampling_event"), "_") %>%
+  pivot_wider(names_from = bin, values_from = n) %>%
+  arrange(placename, sampling_event) %>% # ensure Y rows are in same order as S and X
+  replace(is.na(.), 0) %>%
+  select(-c(placename, sampling_event))
 Y
 
 
-
 # correct Y for sampling effort
-eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date))
-eff$effort <- as.numeric(eff$end_date - eff$start_date)
-# NB! if using static (non-multi-year) analysis, aggregate (sum) effort from all years
-#eff <- aggregate(eff$effort, by=list(Camera.Trap.Name=eff$Camera.Trap.Name), FUN="sum")
-target <- S$placename
-eff <- eff[match(target, eff$placename),] # match to ensure row order in eff is the same as in Y
+eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date)) %>%
+  mutate(effort = as.numeric(end_date - start_date)) %>%
+  arrange(placename, sampling_event) %>%
+  select(placename, sampling_event, effort)
 eff
+# NB! if using static (not multi-year) analysis, aggregate (sum) effort from all years
+#eff <- aggregate(eff$effort, by=list(Camera.Trap.Name=eff$Camera.Trap.Name), FUN="sum")
+
+# now we either divide Y columns by eff$effort column
 #Y <- round(Y/eff$effort, 5) # correct Y for effort
-# instead of correcting for effort, lets add effort as a covariate to X
+# or instead of correcting for effort, we add effort as a covariate to X
 #X <- left_join(X, eff[,c("placename", "effort")], by="placename")
 X <- X %>%
   mutate(effort = eff$effort)
@@ -162,19 +181,21 @@ traits
 # herbivore (include grazers, browsers, granivores and frugivores, with >50% plant material)
 # insectivore (>50% invertebrates),
 # omnivore (generally both plant and animal material;
-traits <- traits %>% add_column(herbivore = traits$Diet.Fruit+traits$Diet.Seed+traits$Diet.PlantO)
-traits$herbivore <- ifelse(traits$herbivore > 50, traits$herbivore <- 1, traits$herbivore <- 0)
-traits <- traits %>% add_column(carnivore = traits$Diet.Inv+traits$Diet.Vend+traits$Diet.Vunk)
-traits$carnivore <- ifelse(traits$carnivore > 50, traits$carnivore <- 1, traits$carnivore <- 0)
-traits <- traits %>% add_column(insectivore = traits$Diet.Inv)
-traits$insectivore <- ifelse(traits$insectivore > 50, traits$insectivore <- 1, traits$insectivore <- 0)
-traits$omnivore <- ifelse(traits$carnivore+traits$herbivore+traits$insectivore > 0, traits$omnivore <- 0, traits$omnivore <- 1)
-traits$omnivore <- ifelse(traits$carnivore+traits$herbivore > 0, traits$omnivore <- 0, traits$omnivore <- 1)
-
 traits <- traits %>%
+  mutate(herbivore = Diet.Fruit+Diet.Seed+Diet.PlantO,
+         herbivore <- ifelse(herbivore > 50, herbivore <- 1, herbivore <- 0),
+         carnivore = Diet.Inv+Diet.Vend+Diet.Vunk,
+         carnivore = ifelse(carnivore > 50, carnivore <- 1, carnivore <- 0),
+         insectivore = Diet.Inv,
+         insectivore = ifelse(insectivore > 50, insectivore <- 1, insectivore <- 0),
+         omnivore = ifelse(carnivore+herbivore+insectivore > 0, omnivore <- 0, omnivore <- 1),
+         omnivore = ifelse(carnivore+herbivore > 0, omnivore <- 0, omnivore <- 1)) %>%
   select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
-  rename(body_mass=BodyMass.Value)
-traits <- traits[match(colnames(Y), traits$genus),] # put rows in same order as in Y columns
+  rename(body_mass = BodyMass.Value)
+
+genus_names <- colnames(Y)
+genus_names <- word(genus_names, 1, sep = "\\ ")
+traits <- traits[match(genus_names, traits$genus),] # put rows in same order as in Y columns
 TP <- traits
 TP
 # !NB bird traits missing from Elton Traits
@@ -182,21 +203,21 @@ TP
 
 #-------------- TESTE
 # if using traits from F. Lima table, skip L.159-180
-traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
+#traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
 
-traits <- traits %>%
-  mutate(bin = gsub("_", " ", especies)) %>%
-  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
-  relocate(bin, .before = especies) %>%
-  select(-especies)
+#traits <- traits %>%
+#  mutate(bin = gsub("_", " ", especies)) %>%
+#  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
+#  relocate(bin, .before = especies) %>%
+#  select(-especies)
 
-species <- tibble(bin = colnames(Y))
-species
+#species <- tibble(bin = genus_names)
+#species
 
-traits %>% left_join(traits, species, by = grepl(bin))
+#traits %>% left_join(traits, species, by = grepl(bin))
 
-traits <- traits[match(colnames(Y), traits$bin),] # put rows in same order as in Y columns
-TP <- traits
+#traits <- traits[match(colnames(Y), traits$bin),] # put rows in same order as in Y columns
+#TP <- traits
 #-------------- FIM TESTE
 
 ##----- Save files-----
@@ -205,29 +226,48 @@ TP <- traits
 which(is.na(S)) # ok, no NAs
 
 which(is.na(X)) # covariate data missing from some sites
-# let us input arbitrary values to these missing rows
-X$placename <- S$placename # use S placenames to replace NAs ...
-# ... and arbitrarily input values from 1st row to all rows with missing data 
-for(i in 1:nrow(X)) {
-  if(is.na(X[i,2])) {X[i,2:5] <- X[1,2:5] }
-}
+# this is not allowed in HMSC
+X[!complete.cases(X), ] # check which cases are not complete
+# let us remove the offending sites from S, Y, and X
+offending <- X %>%
+  rowid_to_column() %>%
+  filter_all(any_vars(is.na(.))) %>%
+  pull(rowid)
+offending
+X <- X[-offending, ]
+which(is.na(X)) # check again
 
+# do the same for S and Y
+S <- S[-offending, ]
+Y <- Y[-offending, ]
+
+# check again
+which(is.na(S))
+which(is.na(X))
 which(is.na(Y))
-
 which(is.na(TP))
-TP$genus <- colnames(Y) # use Y colnames (genera names) to replace NAs ...
+
+#TP$genus <- colnames(Y) # use Y colnames (genera names) to replace NAs ...
 # ... and arbitrarily input values from 1st row to all rows with missing data 
-for(i in 1:nrow(TP)) {
-  if(is.na(TP[i,2])) {TP[i,2:6] <- TP[1,2:6] }
-}
+#for(i in 1:nrow(TP)) {
+#  if(is.na(TP[i,2])) {TP[i,2:6] <- TP[1,2:6] }
+#}
 TP # check
 
 
 ## Save SXY file as csv and rds
 dim(S); dim(X); dim(Y)
-X$placename <- NULL
-#Y$placename <- NULL
+
+# remove stuff from X
+X <- X %>%
+  select(-c(sampling_event, longitude, latitude))
+
+# remove stuff from S
+S <- S %>%
+  select(-c(placename))
+
 SXY <- cbind(S,X,Y)
+
 dim(SXY)
 write.csv(SXY, file=here("data", "SXY.csv"), row.names = FALSE) 
 #saveRDS(SXY, file=here("data", "SXY.rds")) 

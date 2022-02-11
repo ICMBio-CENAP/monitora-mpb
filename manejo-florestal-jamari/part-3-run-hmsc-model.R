@@ -27,13 +27,28 @@ model.directory = file.path(localDir, "models")
 library(Hmsc)
 set.seed(1)
 
+# xy
+xy <- S %>%
+  select(longitude, latitude) %>%
+  distinct(longitude, latitude)
+head(xy)
 
-XFormula = ~elevation+slope+dist_water
+head(Y)
+
+XData <- X
+head(XData)
+
+TrData <- Tr
+rownames(TrData) <- colnames(Y)
+head(TrData)
+
+
+XFormula <- ~ elevation + slope + dist_water + dummy_variable + effort
 
 # We will use body mass as the only trait covariate, and assume a linear
 # effect
 
-TrFormula = ~body_mass
+TrFormula <- ~ body_mass + herbivore + carnivore + insectivore + omnivore
 
 # We next define the presence-absence model.
 
@@ -48,8 +63,59 @@ TrFormula = ~body_mass
 # We assume the probit distribution as appropriate for
 # presence-absence data
 
-# The data have no specific structure and do not include any random
-# effects, thus we do not define studyDesign nor ranLevels
+# The data have a specific structure and includes random
+# effects, thus we have to define studyDesign and ranLevels
+studyDesign = data.frame(placename = X$placename)
+rL = HmscRandomLevel(sData = xy)
+
+model.abu <- Hmsc(Y = Y, XData = XData, XFormula = XFormula,
+              TrData = TrData,
+              TrFormula = TrFormula, distr="lognormal poisson",
+              studyDesign = studyDesign,
+              ranLevels = list(route=rL))
+
+# it is not working with random levels, lets try without it
+model.pa <- Hmsc(Y = (Y>0), XData = XData, XFormula = XFormula,
+                 TrData = TrData,
+                 TrFormula = TrFormula, distr="probit",
+                 studyDesign = studyDesign)
+
+
+model.abu <- Hmsc(Y = Y, XData = XData, XFormula = XFormula,
+                 TrData = TrData,
+                 TrFormula = TrFormula, distr="lognormal poisson",
+                 studyDesign = studyDesign)
+
+# It is always a good idea to look at the model object.
+model.pa
+model.abu
+
+getCall(model.pa)
+getCall(model.abu)
+
+head(model.pa$X)
+head(model.abu$X)
+
+thin = 100
+samples = 1000
+nChains = 2
+nParallel = 2
+
+# for (thin in c(1,10,100,1000)){
+for (thin in c(1,10)) {
+  transient = 50*thin
+  model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
+  filename = file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
+  save(model.pa, file=filename)
+  model.abu <- sampleMcmc(model.abu, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
+  filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
+  save(model.abu, file=filename)
+}
+
+# PAREI AQUI
+# NB! problemas a resolver acima, por exemplo quantas unidades amostrais afinal?
+# sítios repetidos em diferentes anos estão sendo considerados amostras independentes?
+#-------------------------------------------------
 
 model.pa = Hmsc(Y=(Y>0),
                 XData = X,  XFormula=XFormula,
