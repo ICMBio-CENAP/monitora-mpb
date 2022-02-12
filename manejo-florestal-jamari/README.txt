@@ -14,7 +14,7 @@ The site id is in the column "placename" and its coordinates are in columns "lon
 The year of visit is in the column "sampling_event".
 
 # COVARIATES (X)
-NB! to be added, for now we are using generic covariates for testing
+NB! to be added, for now we are using a mix of real and dummy covariates for testing
 elevation (continuous): camera-trap site elevation in m.a.s.l.
 slope (continuous): slope at camera-trap site
 dist.water (continuous): distance to nearest water body in metres

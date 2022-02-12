@@ -7,9 +7,11 @@
 # wd = "C:/HMSC_book/R-scripts/Section_6_7_plants"
 # setwd(wd)
 
-localDir = "."
-data.directory = file.path(localDir, "data")
-model.directory = file.path(localDir, "models")
+library(here)
+
+#localDir = "."
+#data.directory = file.path(localDir, "data")
+#model.directory = file.path(localDir, "models")
 library(Hmsc)
 set.seed(1)
 
@@ -26,39 +28,33 @@ list.files(model.directory, patt="model_pa_") #presence-absence models
 # convergence statistics improve
 
 nChains = 2
-samples = 100
+samples = 500
 thin = 1 # try with thin = 1, thin = 10, thin = 100, etc.
-filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-load(filename)
+#filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
+#load(filename)
+load("/home/elildojr/Documents/r/monitora-mpb/models/model_pa_chains_2_samples_500_thin_10")
 
-# When you use load(), the dataset name is set to the same as when 
-# you used the data (and that was 'model.pa' in our script). You shall
-# not assign (use = or <-) your load result, but after you use
-# load(), you have 'model.pa' in your workspace.
-
-# We first extract the posterior distribution from the model object and convert
-# it into a coda object.
-# Note that Hmsc uses coda only to examine convergence, whereas other operations
-# (e.g. exploring of parameters or making predictions) are conducted straigt
-# from the Hmsc object model.pa rather than the coda object.
-
+# extract posterior distribution and convert into a coda object
+# Hmsc uses coda to examine convergence, other operations are conducted straight from the Hmsc object
 mpost = convertToCodaObject(model.pa)
 
-# We will explore the MCMC convergence for the beta-parameters (species niches),
+# explore MCMC convergence for beta-parameters (species niches),
 # V-parameters (variation in species niches),
 # and the rho-parameter (phylogenetic signal)
 # These are just examples; you may use names(mpost) see what other parameters were estimated
 
-# We first examine the effective size of the posterior sample.
+# first examine the effective size of the posterior sample.
 # As there are two chains with a sample of 100 from each, the actual sample size is 200.
 # Thus, ideally the effective sample size would be 200 as well.
-# But in presense of autocorrelation, the effective sample size will be lower than the actual sample size
+# But in presence of autocorrelation, the effective sample size will be lower than the actual sample size
 
 ess.beta = effectiveSize(mpost$Beta)
+
 # Our model contains 150 beta-parameters (2 for each of the 75 species)
 # Thus we have 150 effective sample sizes to look at. This is best done with a histogram
 hist(ess.beta, xlab = expression("Effective sample size" ~ beta ~ ""))
 ess.V = effectiveSize(mpost$V)
+
 # As ess.V has only four entries, we just look at it directlt instead of
 # drawing a histogram
 ess.V

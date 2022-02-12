@@ -20,6 +20,10 @@ S <- SXY[,1:3]
 X <- SXY[,4:10]
 Y <- SXY[,11:27]
 
+head(S)
+head(X)
+head(Y)
+
 # What is not always easy is to decide what goes to S and what to X.
 # As a general rule, include in S those variables that you think should be modelled as random effect,
 # and in X those that you think should be modelled as fixed effects.
