@@ -25,11 +25,11 @@ library(spDataLarge)
 # read pre-harvest shapefile
 JAM1_UPA01 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2010_UPA1/UPA_1_Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA01 <- st_transform(JAM1_UPA01, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA01)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA01 <- bind_cols(JAM1_UPA01,coords)
 
 # fix column names and formats
@@ -45,7 +45,7 @@ JAM1_UPA01 <- JAM1_UPA01 %>%
          altura = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -68,10 +68,17 @@ jam1_upa01 <- left_join(JAM1_UPA01, jam1_upa01, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa01
 
-# check
+# check if UPA was harvested in more than a single year
+table(jam1_upa01$ano_exploracao)
+
+# check if dap is in metres
+summary(jam1_upa01$dap, na.rm=TRUE)
+
+
+# check map
 options(sf_max.plot=1)
 plot(jam1_upa01)
 
@@ -83,11 +90,11 @@ plot(jam1_upa01)
 # read pre-harvest shapefile
 JAM1_UPA02 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2011_UPA2/UPA_2_Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA02 <- st_transform(JAM1_UPA02, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA02)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA02 <- bind_cols(JAM1_UPA02,coords)
 
 # fix column names and formats
@@ -103,7 +110,7 @@ JAM1_UPA02 <- JAM1_UPA02 %>%
          altura = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, 
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -126,8 +133,15 @@ jam1_upa02 <- left_join(JAM1_UPA02, jam1_upa02, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa02
+
+# check if UPA was harvested in more than a single year
+table(jam1_upa02$ano_exploracao)
+
+
+# check if dap is in metres
+summary(jam1_upa02$dap, na.rm=TRUE)
 
 # check
 options(sf_max.plot=1)
@@ -138,11 +152,11 @@ plot(jam1_upa02)
 # shapefile for upa 03 is missing, use this alternative
 JAM1_UPA03 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2012_UPA3/JAM1_UPA03_wgs84.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA03 <- st_transform(JAM1_UPA03, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA03)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA03 <- bind_cols(JAM1_UPA03,coords)
 
 # fix column names and formats
@@ -158,7 +172,7 @@ JAM1_UPA03 <- JAM1_UPA03 %>%
   mutate(umf = "umf-1",
          upa = "upa-4",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 
@@ -183,8 +197,12 @@ jam1_upa03 <- left_join(JAM1_UPA03, jam1_upa03, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, data_corte, n_toras, volume,
-         lat, long)
+         lat, lon)
 jam1_upa03
+
+
+# check if dap is in metres
+summary(jam1_upa01$dap, na.rm=TRUE)
 
 # check
 options(sf_max.plot=1)
@@ -213,31 +231,32 @@ plot(JAM1_UPA03)
 #-----UPA-04
 
 # read pre-harvest shapefile
-#JAM1_UPA04 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2013_UPA4/Árvores_editadoQgis.shp")
+#
+JAM1_UPA04 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2013_UPA4/Árvores2.shp")
 # not reading Shaura SFB shapefile, use this alternative
-JAM1_UPA04 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2013_UPA4/JAM1_UPA04_wgs84.shp")
+#JAM1_UPA04 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2013_UPA4/JAM1_UPA04_wgs84.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA04 <- st_transform(JAM1_UPA04, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA04)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA04 <- bind_cols(JAM1_UPA04,coords)
 
 # fix column names and formats
 names(JAM1_UPA04) # check names
 JAM1_UPA04 <- JAM1_UPA04 %>%
-  rename(arvore = Árvore,
-         especie_pre = Nome_cient,
-         nome_comum = Nome_Comum,
-         dap = DAP,
-         area_basal = Área_basa,
-         altura = Altura,
-         volume = Volume) %>%
+  rename(arvore = INDICE) %>%
   mutate(umf = "umf-1",
          upa = "upa-4",
-         status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+         status = NA,
+         especie_pre = NA,
+         nome_comum = NA,
+         dap = NA,
+         area_basal = NA,
+         altura = NA,
+         volume = NA) %>%
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -260,7 +279,7 @@ jam1_upa04 <- left_join(JAM1_UPA04, jam1_upa04, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, data_corte, n_toras, volume,
-         lat, long)
+         lat, lon)
 jam1_upa04
 
 # check
@@ -292,11 +311,11 @@ plot(JAM1_UPA04)
 # read pre-harvest shapefile
 JAM1_UPA05 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2014_UPA5/ÁRVORE_SIRGAS.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA05 <- st_transform(JAM1_UPA05, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA05)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA05 <- bind_cols(JAM1_UPA05,coords)
 
 # fix column names and formats
@@ -312,7 +331,7 @@ JAM1_UPA05 <- JAM1_UPA05 %>%
          area_basal = NA,
          altura = NA,
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -326,11 +345,11 @@ JAM1_UPA05 <- JAM1_UPA05 %>%
 # read pre-harvest shapefile
 JAM1_UPA06 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2016_UPA6/00_Árvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA06 <- st_transform(JAM1_UPA06, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA06)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA06 <- bind_cols(JAM1_UPA06,coords)
 
 # fix column names and formats
@@ -346,7 +365,7 @@ JAM1_UPA06 <- JAM1_UPA06 %>%
   mutate(umf = "umf-1",
          upa = "upa-6",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -371,7 +390,7 @@ jam1_upa06 <- left_join(JAM1_UPA06, jam1_upa06, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa06
 
 # check
@@ -386,11 +405,11 @@ plot(jam1_upa06)
 # read pre-harvest shapefile
 JAM1_UPA07 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2020_UPA7/JAM1_UPA7_Arvores_v4.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA07 <- st_transform(JAM1_UPA07, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA07)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA07 <- bind_cols(JAM1_UPA07,coords)
 
 # fix column names and formats
@@ -406,7 +425,7 @@ JAM1_UPA07 <- JAM1_UPA07 %>%
   mutate(umf = "umf-1",
          upa = "upa-7",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -431,7 +450,7 @@ jam1_upa07 <- left_join(JAM1_UPA07, jam1_upa07, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa07
 
 # check
@@ -444,11 +463,11 @@ plot(jam1_upa07)
 # read pre-harvest shapefile
 JAM1_UPA08 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2019_UPA8/JAM1_UPA8_Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA08 <- st_transform(JAM1_UPA08, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA08)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA08 <- bind_cols(JAM1_UPA08,coords)
 
 # fix column names and formats
@@ -464,7 +483,7 @@ JAM1_UPA08 <- JAM1_UPA08 %>%
   mutate(umf = "umf-1",
          upa = "upa-8",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -489,7 +508,7 @@ jam1_upa08 <- left_join(JAM1_UPA08, jam1_upa08, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa08
 
 # check
@@ -502,11 +521,11 @@ plot(jam1_upa08)
 # read pre-harvest shapefile
 JAM1_UPA09 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2018_UPA9/09_Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA09 <- st_transform(JAM1_UPA09, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA09)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA09 <- bind_cols(JAM1_UPA09,coords)
 
 # fix column names and formats
@@ -522,7 +541,7 @@ JAM1_UPA09 <- JAM1_UPA09 %>%
   mutate(umf = "umf-1",
          upa = "upa-9",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -547,7 +566,7 @@ jam1_upa09 <- left_join(JAM1_UPA09, jam1_upa09, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa09
 
 # check
@@ -560,11 +579,11 @@ plot(jam1_upa09)
 # read pre-harvest shapefile
 JAM1_UPA10 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2017_UPA10/00_Árvore.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA10 <- st_transform(JAM1_UPA10, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA10)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA10 <- bind_cols(JAM1_UPA10,coords)
 
 # fix column names and formats
@@ -580,7 +599,7 @@ JAM1_UPA10 <- JAM1_UPA10 %>%
   mutate(umf = "umf-1",
          upa = "upa-10",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -605,7 +624,7 @@ jam1_upa10 <- left_join(JAM1_UPA10, jam1_upa10, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa10
 
 # check
@@ -619,11 +638,11 @@ plot(jam1_upa10)
 # read pre-harvest shapefile
 JAM1_UPA11 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2015_UPA11/1_Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA11 <- st_transform(JAM1_UPA11, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA11)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA11 <- bind_cols(JAM1_UPA11,coords)
 
 # fix column names and formats
@@ -639,7 +658,7 @@ JAM1_UPA11 <- JAM1_UPA11 %>%
   mutate(umf = "umf-1",
          upa = "upa-11",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -664,7 +683,7 @@ jam1_upa11 <- left_join(JAM1_UPA11, jam1_upa11, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa11
 
 # check
@@ -679,11 +698,11 @@ plot(jam1_upa11)
 # read pre-harvest shapefile
 JAM1_UPA13 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2021_UPA13/JAM1_UPA13_IF.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA13 <- st_transform(JAM1_UPA13, 4326)
 coords <- data.frame(st_coordinates(JAM1_UPA13)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM1_UPA13 <- bind_cols(JAM1_UPA13,coords)
 
 # fix column names and formats
@@ -699,7 +718,7 @@ JAM1_UPA13 <- JAM1_UPA13 %>%
   mutate(umf = "umf-1",
          upa = "upa-13",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, long, dap, area_basal, altura, volume,
+  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
@@ -724,7 +743,7 @@ jam1_upa13 <- left_join(JAM1_UPA13, jam1_upa13, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam1_upa13
 
 # check
@@ -733,7 +752,7 @@ plot(jam1_upa13)
 
 ##-----
 
-# join UPA-1 shapefiles into a single file
+# join UMF-1 shapefiles into a single file
 jam1 <- bind_rows(jam1_upa01, jam1_upa02, jam1_upa03, jam1_upa04, jam1_upa06,
           jam1_upa07, jam1_upa08, jam1_upa09, jam1_upa10, jam1_upa11, jam1_upa13)
 # NB! jam1_upa05 is not on the list because it lacked post-harvest data
@@ -747,11 +766,11 @@ dim(jam1)
 # read pre-harvest shapefile
 JAM3_UPA01 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2011_UPA1/censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA01 <- st_transform(JAM3_UPA01, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA01)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA01 <- bind_cols(JAM3_UPA01,coords)
 
 # fix column names and formats
@@ -769,7 +788,7 @@ JAM3_UPA01 <- JAM3_UPA01 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -792,7 +811,7 @@ jam3_upa01 <- left_join(JAM3_UPA01, jam3_upa01, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa01
 
 # check
@@ -809,11 +828,11 @@ plot(jam3_upa01)
 JAM3_UPA02 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/UPA2/JAM3_UPA02_wgs84.shp")
 
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA02 <- st_transform(JAM3_UPA02, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA02)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA02 <- bind_cols(JAM3_UPA02,coords)
 
 # fix column names and formats
@@ -832,7 +851,7 @@ JAM3_UPA02 <- JAM3_UPA02 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -855,7 +874,7 @@ jam3_upa02 <- left_join(JAM3_UPA02, jam3_upa02, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa02
 
 # check
@@ -870,11 +889,11 @@ plot(jam3_upa02)
 # Shaura's shapefile for upa 03 is missing, use this alternative
 JAM3_UPA03 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/UPA3/JAM3_UPA03_wgs84.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA03 <- st_transform(JAM3_UPA03, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA03)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA03 <- bind_cols(JAM3_UPA03,coords)
 
 # fix column names and formats
@@ -893,7 +912,7 @@ JAM3_UPA03 <- JAM3_UPA03 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -916,7 +935,7 @@ jam3_upa03 <- left_join(JAM3_UPA03, jam3_upa03, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa03
 
 # check
@@ -929,14 +948,13 @@ plot(jam3_upa03)
 #-----UPA-04
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 04 is missing, use this alternative
 JAM3_UPA04 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2014_UPA4/UPA04_censo_BD2.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA04 <- st_transform(JAM3_UPA04, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA04)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA04 <- bind_cols(JAM3_UPA04,coords)
 
 # fix column names and formats
@@ -955,7 +973,7 @@ JAM3_UPA04 <- JAM3_UPA04 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -979,7 +997,7 @@ jam3_upa04 <- left_join(JAM3_UPA04, jam3_upa04, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa04
 
 # check
@@ -992,14 +1010,13 @@ plot(jam3_upa04)
 #-----UPA-05
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 05 is missing, use this alternative
 JAM3_UPA05 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2015_UPA5/Arvores.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA05 <- st_transform(JAM3_UPA05, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA05)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA05 <- bind_cols(JAM3_UPA05,coords)
 
 # fix column names and formats
@@ -1017,7 +1034,7 @@ JAM3_UPA05 <- JAM3_UPA05 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1040,7 +1057,7 @@ jam3_upa05 <- left_join(JAM3_UPA05, jam3_upa05, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa05
 
 # check
@@ -1055,14 +1072,13 @@ plot(jam3_upa05)
 #-----UPA-06
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 06 is missing, use this alternative
 JAM3_UPA06 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2016_UPA6/Arvores3.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA06 <- st_transform(JAM3_UPA06, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA06)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA06 <- bind_cols(JAM3_UPA06,coords)
 
 # fix column names and formats
@@ -1080,7 +1096,7 @@ JAM3_UPA06 <- JAM3_UPA06 %>%
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1103,7 +1119,7 @@ jam3_upa06 <- left_join(JAM3_UPA06, jam3_upa06, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa06
 
 # check
@@ -1115,14 +1131,13 @@ plot(jam3_upa06)
 #-----UPA-11
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 11 is missing, use this alternative
 JAM3_UPA11 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2018_UPA11/UPA_11_Censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA11 <- st_transform(JAM3_UPA11, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA11)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA11 <- bind_cols(JAM3_UPA11,coords)
 
 # fix column names and formats
@@ -1140,7 +1155,7 @@ JAM3_UPA11 <- JAM3_UPA11 %>%
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1163,7 +1178,7 @@ jam3_upa11 <- left_join(JAM3_UPA11, jam3_upa11, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa11
 
 # check
@@ -1175,14 +1190,13 @@ plot(jam3_upa11)
 #-----UPA-12
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 12 is missing, use this alternative
 JAM3_UPA12 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2019_UPA12/UPA_12_Censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA12 <- st_transform(JAM3_UPA12, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA12)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA12 <- bind_cols(JAM3_UPA12,coords)
 
 # fix column names and formats
@@ -1200,7 +1214,7 @@ JAM3_UPA12 <- JAM3_UPA12 %>%
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1223,7 +1237,7 @@ jam3_upa12 <- left_join(JAM3_UPA12, jam3_upa12, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa12
 
 # check
@@ -1234,14 +1248,13 @@ plot(jam3_upa12)
 #-----UPA-14
 
 # read pre-harvest shapefile
-# Shaura's shapefile for upa 14 is missing, use this alternative
 JAM3_UPA14 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2017_UPA14/UPA_14_Censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA14 <- st_transform(JAM3_UPA14, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA14)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA14 <- bind_cols(JAM3_UPA14,coords)
 
 # fix column names and formats
@@ -1259,7 +1272,7 @@ JAM3_UPA14 <- JAM3_UPA14 %>%
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1282,7 +1295,7 @@ jam3_upa14 <- left_join(JAM3_UPA14, jam3_upa14, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa14
 
 # check
@@ -1298,11 +1311,11 @@ plot(jam3_upa14)
 # Shaura's shapefile for upa 15 is missing, use this alternative
 #JAM3_UPA15 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2017_UPA15/UPA_15_Censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA15 <- st_transform(JAM3_UPA15, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA15)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA15 <- bind_cols(JAM3_UPA15,coords)
 
 # fix column names and formats
@@ -1320,7 +1333,7 @@ JAM3_UPA15 <- JAM3_UPA15 %>%
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1343,7 +1356,7 @@ jam3_upa15 <- left_join(JAM3_UPA15, jam3_upa15, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa15
 
 # check
@@ -1359,11 +1372,11 @@ plot(jam3_upa15)
 # Shaura's shapefile for upa 16 is missing
 #JAM3_UPA16 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2017_UPA16/UPA_16_Censo.shp")
 
-# convert from utm to decimal degrees and add lat long columns
+# convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA16 <- st_transform(JAM3_UPA16, 4326)
 coords <- data.frame(st_coordinates(JAM3_UPA16)) %>%
   rename(lat = Y,
-         long = X)
+         lon = X)
 JAM3_UPA16 <- bind_cols(JAM3_UPA16,coords)
 
 # fix column names and formats
@@ -1381,7 +1394,7 @@ JAM3_UPA16 <- JAM3_UPA16 %>%
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, long, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
@@ -1404,9 +1417,154 @@ jam3_upa16 <- left_join(JAM3_UPA16, jam3_upa16, by = "arvore") %>%
   select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
-         lat, long)
+         lat, lon)
 jam3_upa16
 
 # check
 options(sf_max.plot=1)
 plot(jam3_upa16)
+
+
+##-----
+
+# join UMF-3 shapefiles into a single file
+jam3 <- bind_rows(jam3_upa01, jam3_upa02, jam3_upa03, jam3_upa05, jam3_upa06,
+                  jam3_upa11, jam3_upa12, jam3_upa14)
+# NB! jam3_upa04, jam3_upa15, jam3_upa16 is not on the list because it lacked post-harvest data
+dim(jam3)
+
+
+
+##--------------------------------------------------
+#--------------------------------------------------
+
+# join everything into a single file
+jam <- bind_rows(jam1, jam3)
+# NB! jam3_upa04, jam3_upa15, jam3_upa16 is not on the list because it lacked post-harvest data
+dim(jam)
+options(sf_max.plot=1)
+plot(jam)
+# there is a problem: infinite values in geometry
+# remove them
+st_bbox(jam) # check bounding box: there are Inf values
+# redefine bounding box
+newXmax <- sort((st_coordinates(st_centroid(jam))[,1]))
+newXmax <- max(newXmax[!is.infinite(newXmax)])
+newYmax <- sort((st_coordinates(st_centroid(jam))[,2]))
+newYmax <- max(newYmax[!is.infinite(newYmax)])
+# create a polygon to clip off outliers (Inf values) 
+bb <- st_bbox(jam)
+bb[3] <- newXmax
+bb[4] <- newYmax
+# Make this a polygon
+bpoly <- st_as_sfc(bb)
+# Crop JAM1_UPA04 data with this polygon
+jam <- st_intersection(jam, bpoly)
+# Plot it
+plot(jam)
+
+#----------------------------
+# compare with previous trees dataset
+trees <- read_csv("/home/elildojr/Documents/r/primates-and-trees/jamari_trees/all_trees.csv")
+trees <- trees %>%
+  rename(status2 = status)
+
+# trees does not have arvore ID for matching
+# try matching using lat lon, but pay attention to decimal precision
+test <- left_join(jam, trees, by = c("lat", "lon"))
+dim(jam)
+dim(trees)
+dim(test)
+test %>% filter(status2 == "explored") %>%
+  select(especie_pos, species, dap, dbh) %>%
+  print(n=100)
+
+jam <- jam %>%
+  filter(!is.na(arvore))
+
+jam %>% nrow()
+
+jam %>%
+  filter(is.na(arvore)) %>% nrow()
+
+jam %>%
+  distinct(umf, upa, arvore) %>% nrow()
+
+#----- write csv for next step -----
+
+jam <- st_drop_geometry(jam) # transform to dataframe for left_join
+write.csv(jam, here("data", "trees_merged.csv"), row.names = FALSE)
+
+
+
+##--------------------------------------------------
+#--------------------------------------------------
+
+#---------- harvested trees ----------#
+harvested_all <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/arvores-abatidas-2020-10-10.shp")
+options(sf_max.plot=1)
+plot(harvested_all)
+
+# there is a problem: infinite values in geometry
+# remove them
+st_bbox(harvested_all) # check bounding box: there are Inf values
+# redefine bounding box
+newXmax <- sort((st_coordinates(st_centroid(harvested_all))[,1]))
+newXmax <- max(newXmax[!is.infinite(newXmax)])
+newYmax <- sort((st_coordinates(st_centroid(harvested_all))[,2]))
+newYmax <- max(newYmax[!is.infinite(newYmax)])
+# create a polygon to clip off outliers (Inf values) 
+bb <- st_bbox(harvested_all)
+bb[3] <- newXmax
+bb[4] <- newYmax
+# Make this a polygon
+bpoly <- st_as_sfc(bb)
+# Crop JAM1_UPA04 data with this polygon
+harvested_all <- st_intersection(harvested_all, bpoly)
+# Plot it
+plot(harvested_all)
+
+# some fixes
+harvested_all <- harvested_all %>%
+  rename(especie = bin,
+         nome_comum = nome.comum,
+         dap = DAP,
+         area_basal = area.basal) %>%
+  select(especie, nome_comum, dap, area_basal, altura, volume, status, lon, lat)
+
+
+
+
+
+
+
+
+
+
+
+# standardize values
+unique(harvested_all$status)
+
+# small fix
+names(harvested_all)[12] <- "lon"
+
+# simplify it
+harvested_all <- harvested_all[,-c(1,2,14)]
+head(harvested_all)
+summary(harvested_all$DAP)
+harvested_all$DAP <- round(harvested_all$DAP/100, 2)
+# some trees have dbh=0, replace by mean values
+# tree censuses only considered dbh > 0.4, so: 
+harvested_all$DAP[which(harvested_all$DAP < 0.3)] <- mean(harvested_all$DAP)
+summary(harvested_all$DAP)
+
+# convert to dataframe
+harvested_all <- st_drop_geometry(harvested_all) # transform to dataframe for left_join
+
+# create bindcol
+harvested_all$bindcol <- paste(round(harvested_all$lon, 5), round(harvested_all$lat, 6), sep = "")
+JAM$bindcol <- paste(round(JAM$lon, 5), round(JAM$lat, 6), sep = "")
+
+# left_join
+test1 <- left_join(JAM, harvested_all, by="bindcol")
+

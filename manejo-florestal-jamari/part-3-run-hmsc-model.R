@@ -91,10 +91,12 @@ getCall(model.abu)
 head(model.pa$X)
 head(model.abu$X)
 
-thin = 10
-samples = 200
+thin = 1
+samples = 250
 nChains = 2
 nParallel = 2
+
+model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples, nChains = nChains, nParallel = nParallel)
 
 # run model pa
 #model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples, nChains = nChains, nParallel = nParallel)
@@ -111,10 +113,12 @@ nParallel = 2
 
 #for (thin in c(1,10,100,1000)){
 for (thin in c(1,10)) {
-  transient = 50*thin
+  transient = 10*thin
   model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
   filename = file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
   save(model.pa, file=filename)
+}
+
   model.abu <- sampleMcmc(model.abu, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
   filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
   save(model.abu, file=filename)
