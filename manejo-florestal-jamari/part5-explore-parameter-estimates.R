@@ -21,12 +21,12 @@ set.seed(1)
 # Note that the model is called "m", so that the same code applies whether 
 # you read originally the model.pa or the model.abu
 
-nChains = 2
-samples = 100
-thin = 1
-filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-load(filename)
-m = model.pa
+nChains <- 2
+samples <- 100
+thin <- 1
+#filename <- file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
+#load(filename)
+m <- model.pa
 #filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #load(filename)
 #m = model.abu
@@ -38,8 +38,13 @@ m = model.pa
 # abundant (model.abu) in sites with low value of TMG,
 # i.e. in sites located in mesic, north-facing slopes.
 
-postBeta = getPostEstimate(m, parName="Beta")
-plotBeta(m, post=postBeta, param="Support", plotTree = TRUE, supportLevel = 0.95, spNamesNumbers = c(F,F), covNamesNumbers = c(T,F))
+postBeta <- getPostEstimate(m, parName="Beta")
+?plotBeta
+par(mar=c(6,10,1,1))
+plotBeta(m, post=postBeta, param="Support", supportLevel = 0.95, spNamesNumbers = c(T,T), covNamesNumbers = c(T,F))
+dev.off()
+
+m$
 
 # We next examine the gamma-parameters, i.e. the influence of environmental
 # covariates to expected species niches

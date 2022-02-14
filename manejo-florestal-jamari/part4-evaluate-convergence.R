@@ -32,11 +32,11 @@ samples = 500
 thin = 1 # try with thin = 1, thin = 10, thin = 100, etc.
 #filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #load(filename)
-load("/home/elildojr/Documents/r/monitora-mpb/models/model_pa_chains_2_samples_500_thin_10")
+load("/home/elildojr/Documents/r/monitora-mpb/models/model_pa_chains_2_samples_250_thin_1")
 
 # extract posterior distribution and convert into a coda object
 # Hmsc uses coda to examine convergence, other operations are conducted straight from the Hmsc object
-mpost = convertToCodaObject(model.pa)
+mpost <- convertToCodaObject(model.pa)
 
 # explore MCMC convergence for beta-parameters (species niches),
 # V-parameters (variation in species niches),
@@ -77,7 +77,7 @@ psrf.rho
 
 
 
-partition = createPartition(model.abu, nfolds = 2,
+partition = createPartition(model.pa, nfolds = 2,
                             column = "placename")
 partition
 
