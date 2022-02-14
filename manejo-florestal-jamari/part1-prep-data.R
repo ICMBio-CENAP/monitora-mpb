@@ -23,6 +23,23 @@ jamari <- left_join(images, deployments[,c("deployment_id", "placename",
   arrange(placename) # order by camera trap name # jamari[order(jamari$placename),]
 jamari
 
+# plot to check coordinates and save csv so others can get covariate values
+library(ggmap)
+lat <- jamari %>% distinct(latitude) %>% summarize(mean = mean(latitude)) %>% pull()
+lon <- jamari %>% distinct(longitude) %>% summarize(mean = mean(longitude)) %>% pull()
+ph_basemap <- get_map(location=c(lon = lon, lat = lat), zoom=11, maptype = 'terrain-background', source = 'stamen')
+ggmap(ph_basemap)
+jamari %>% 
+  distinct(placename, latitude, longitude) %>%
+  ggplot(aes(x = longitude, y = latitude)) +
+  geom_point()
+  # + ggmap(ph_basemap)
+sites <- jamari %>% 
+  distinct(placename, latitude, longitude)
+sites
+write.csv(sites, here("data", "jamari_sites.csv"), row.names = FALSE)
+
+
 # some fixes
 jamari <- jamari %>%
   mutate(bin = factor(str_c(genus, species, sep=" ")),
