@@ -1,5 +1,4 @@
-# THIS SCRIPT EVALUATES MCMC CONVERGENCE OF HMSC MODELS FOR THE PLANT EXAMPLE (SECTION 6.7) OF THE BOOK
-# Ovaskainen, O. and Abrego, N. 2020. Joint Species Distribution Modelling - With Applications in R. Cambridge University Press.
+# Evaluate MCMC convergence of HMSC model
 
 # The preliminaries are as in script S1
 
@@ -23,7 +22,7 @@ list.files(model.directory, patt="model_pa_") #presence-absence models
 # Here we explore the MCMC convergence of the presence-absence model only
 # That of the abundance model could and should be explored similarly
 # The main interest is in the "final" model that was run with the highest value of thin.
-# However, we recommed runing the script first with setting thin = 1
+# However, we recommend running the script first with setting thin = 1
 # Then rerun it with thin = 10, thin = 100, ... to examine how the
 # convergence statistics improve
 

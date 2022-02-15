@@ -1602,8 +1602,29 @@ plot(jam)
 #----------------------------
 # compare with previous trees dataset
 trees <- read_csv("/home/elildojr/Documents/r/primates-and-trees/jamari_trees/all_trees.csv")
-trees <- trees %>%
-  rename(status2 = status)
+trees %>% 
+  group_by(UMF, UPA) %>%
+  count()
+
+trees %>%
+  filter(UMF == "UMF-1", UPA == "UPA-01") %>%
+  group_by(status) %>%
+  count()
+
+trees %>%
+  filter(UMF == "UMF-3", UPA == "UPA-02") %>%
+  group_by(status) %>%
+  count()
+
+trees %>%
+  filter(UMF == "UMF-3", UPA == "UPA-03") %>%
+  group_by(status) %>%
+  count()
+
+trees %>%
+  group_by(UMF, UPA, status) %>%
+  count() %>% print(n=Inf)
+
 
 # trees does not have id_arvore ID for matching
 # try matching using lat lon, but pay attention to decimal precision

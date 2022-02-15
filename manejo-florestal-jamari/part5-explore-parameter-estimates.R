@@ -52,12 +52,16 @@ betas %>%
 # check intensity effects
 betas %>%
   filter(grepl("intensity", parameter))
-                                      
+                
 # check effort effects
 betas %>%
   filter(grepl("effort", parameter))
 
-# etc for other parameters...
+# check Dasyprocta responses
+betas %>%
+  filter(grepl("Dasyprocta", parameter))
+
+# etc for other parameters/species...
 
 # plot
 par(mar=c(6,10,1,1))
@@ -71,6 +75,39 @@ print(summary(mpost$Beta))
 # NB! I still have to check how to extract values (indexes etc)
 str(mpost$Beta)
 str(mpost$Beta[1])
+
+
+
+#----- Gradient plots
+
+# illustrate how the species community varies along a given environmental gradient
+# can be done for species richness, individual species, traits etc (see help) 
+# ideally do only for species with significant beta effects
+
+# plot prediction for species richness given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
+
+
+# plot prediction for individual species given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
+             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
+
+
+# plot community-weighed mean values of traits given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="T", index=2, las=1,
+             showData = TRUE, main='Mean body mass (measure="T")')
+
+
+
 
 
 #----- Gamma parameters (influence of environmental covariates to expected species niches)
@@ -100,35 +137,6 @@ for (r in 1:m$nr){
            col=colorRampPalette(c("blue","white","red"))(200),
            title="",type="lower",tl.col="black",tl.cex=.7, mar=c(0,0,6,0))
 }
-
-
-#----- Gradient plots
-
-# illustrate how the species community varies along a given environmental gradient
-# can be done for species richness, individual species, traits etc (see help) 
-
-# plot prediction for species richness given by index
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
-
-
-# plot prediction for individual species given by index
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
-             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
-
-
-# plot community-weighed mean values of traits given by index
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="T", index=2, las=1,
-             showData = TRUE, main='Mean body mass (measure="T")')
-
 
 
 #----- variance partitioning

@@ -1,6 +1,6 @@
-library(here)
+# Read and prepare data for HMSC analysis
 
-# MODIFY THIS SCRIPT SO THAT IT RUNS WITH YOUR OWN DATA
+library(here)
 
 # You need to provide an SXY file.
 # The files TP and P are optional, so indicate with TRUE/FALSE if they are included or not
@@ -26,8 +26,8 @@ head(Y)
 
 # Check for absent (0) or ubiquitous species (1).
 range(colMeans(Y>0))
-
 min(colSums(Y>0))
+
 # =1: check how many species are rare and exclude these. 
 # Rare defined as < 5 plot occurrences in the pilot model, to limit processing time.
 
@@ -35,15 +35,15 @@ rarespecies = which(colSums(Y>0)<5)
 length(rarespecies)
 # =49 out of the original 25 species are rare in the pilot dataset. 
 # Excluding these leaves 21 species in the dataset.
-Y = Y[,-rarespecies]
+#Y = Y[,-rarespecies]
 
 
 hist(colMeans(Y>0),main="prevalence")
-# Most species are rare nonetheless.
+# Most species are rare nonetheless
 hist(as.matrix(log(Y[Y>0])),main="log abundance conditional on presence")
 
 
-# Species are absent in many plots - if abundance is modelled, need a zero-inflated model. 
+# Species are absent in many plots - if abundance is modeled, need a zero-inflated model. 
 # Choice for the pilot model is a hurdle model: species presence-absence and log(abundance)
 # separately.
 
@@ -52,15 +52,14 @@ hist(rowSums(Y>0))
 
 plot(X)
 
-# Proposed three X variables for pilot model are: elevation, dist.water, forest
-# Sampling effort is also included, so that the effect of varying sampling effort
-# (N days camera was in use) on the results can be directly estimated.
+# Proposed three X variables for model are: elevation, dist_water, logging_intensity etc
+# sampling effort is also included
 
-plot(X[, c("elevation", "dist.water", "forest", "effort")])
-cor(X[, c("elevation", "dist.water", "forest", "effort")])
+plot(X[, c("dummy_variable1", "dummy_variable2", "intensity_500", "effort")])
+cor(X[, c("dummy_variable1", "dummy_variable2", "intensity_500", "effort")])
 
 
-Tr = droplevels(Tr[-rarespecies,])
+#Tr = droplevels(Tr[-rarespecies,])
 # Suggested pilot trait = log.BodyMass.Value
 #Tr$log.BodyMass.Value = log(Tr$BodyMass.Value)
 #summary(Tr)
