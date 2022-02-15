@@ -1,7 +1,7 @@
 # merge MADEFLONA and AMATA tree shapefiles
-# data is not in a standard format
-# columns and units vary depending on concession and year
-# fix what can be fixed
+# provided by SFB - Serviço Florestal Brasileiro
+# data is messy
+# # fix what can be fixed
 
 # to install rgdal in Ubuntu:
 #sudo apt-get install gdal-bin proj-bin libgdal-dev libproj-dev
@@ -16,7 +16,8 @@ library(tidyverse)
 library(spData)
 library(spDataLarge)
 
-# read and merge shapefiles
+
+# read and fix UPA tree data from UMF-1 and UMF-2
 
 ##---------- UMF 1 ----------#
 
@@ -35,7 +36,7 @@ JAM1_UPA01 <- bind_cols(JAM1_UPA01,coords)
 # fix column names and formats
 names(JAM1_UPA01) # check names
 JAM1_UPA01 <- JAM1_UPA01 %>%
-  rename(arvore = ARV) %>%
+  rename(id_arvore = ARV) %>%
   mutate(umf = "umf-1",
          upa = "upa-1",
          especie_pre = NA,
@@ -45,13 +46,15 @@ JAM1_UPA01 <- JAM1_UPA01 %>%
          altura = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
+head(JAM1_UPA01)
+n_before <- dim(JAM1_UPA01)[1]
 
 # post-harvest
 jam1_upa01 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/UMF1_UPA1_Campos_Movimentação.csv")
 jam1_upa01 <- jam1_upa01 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -59,17 +62,24 @@ jam1_upa01 <- jam1_upa01 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
+jam1_upa01
 
 # join pre and post-harvest
-jam1_upa01 <- left_join(JAM1_UPA01, jam1_upa01, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa01 <- left_join(JAM1_UPA01, jam1_upa01, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa01
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa01)[1]
+n_before-n_after
+
 
 # check if UPA was harvested in more than a single year
 table(jam1_upa01$ano_exploracao)
@@ -77,12 +87,9 @@ table(jam1_upa01$ano_exploracao)
 # check if dap is in metres
 summary(jam1_upa01$dap, na.rm=TRUE)
 
-
 # check map
 options(sf_max.plot=1)
 plot(jam1_upa01)
-
-
 
 
 #-----UPA-02
@@ -96,11 +103,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA02)) %>%
   rename(lat = Y,
          lon = X)
 JAM1_UPA02 <- bind_cols(JAM1_UPA02,coords)
+head(JAM1_UPA02)
 
 # fix column names and formats
 names(JAM1_UPA02) # check names
 JAM1_UPA02 <- JAM1_UPA02 %>%
-  rename(arvore = Individuo) %>%
+  rename(id_arvore = Individuo) %>%
   mutate(umf = "umf-1",
          upa = "upa-2",
          especie_pre = NA,
@@ -110,13 +118,15 @@ JAM1_UPA02 <- JAM1_UPA02 %>%
          altura = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, 
          volume, status)
+
+n_before <- dim(JAM1_UPA02)[1]
 
 # post-harvest
 jam1_upa02 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/UMF1_UPA2_Campos_Movimentação.csv")
 jam1_upa02 <- jam1_upa02 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -124,21 +134,26 @@ jam1_upa02 <- jam1_upa02 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
+jam1_upa02
 
 # join pre and post-harvest
-jam1_upa02 <- left_join(JAM1_UPA02, jam1_upa02, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa02 <- left_join(JAM1_UPA02, jam1_upa02, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa02
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa02)[1]
+n_before-n_after
+
 # check if UPA was harvested in more than a single year
 table(jam1_upa02$ano_exploracao)
-
 
 # check if dap is in metres
 summary(jam1_upa02$dap, na.rm=TRUE)
@@ -159,10 +174,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA03)) %>%
          lon = X)
 JAM1_UPA03 <- bind_cols(JAM1_UPA03,coords)
 
+head(JAM1_UPA03)
+
 # fix column names and formats
 names(JAM1_UPA03) # check names
 JAM1_UPA03 <- JAM1_UPA03 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_Cient,
          nome_comum = Nome_Vulga,
          dap = DAP,
@@ -172,14 +189,15 @@ JAM1_UPA03 <- JAM1_UPA03 %>%
   mutate(umf = "umf-1",
          upa = "upa-4",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
+n_before <- dim(JAM1_UPA03)[1]
 
 # post-harvest
 jam1_upa03 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/UMF1_UPA3_Campos_Movimentação.csv")
 jam1_upa03 <- jam1_upa03 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -187,19 +205,23 @@ jam1_upa03 <- jam1_upa03 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 jam1_upa03
 
 # join pre and post-harvest
-jam1_upa03 <- left_join(JAM1_UPA03, jam1_upa03, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa03 <- left_join(JAM1_UPA03, jam1_upa03, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, data_corte, n_toras, volume,
          lat, lon)
 jam1_upa03
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa03)[1]
+n_before-n_after
 
 # check if dap is in metres
 summary(jam1_upa01$dap, na.rm=TRUE)
@@ -243,10 +265,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA04)) %>%
          lon = X)
 JAM1_UPA04 <- bind_cols(JAM1_UPA04,coords)
 
+head(JAM1_UPA04)
+
 # fix column names and formats
 names(JAM1_UPA04) # check names
 JAM1_UPA04 <- JAM1_UPA04 %>%
-  rename(arvore = INDICE) %>%
+  rename(id_arvore = INDICE) %>% # assuming this is the ID column
   mutate(umf = "umf-1",
          upa = "upa-4",
          status = NA,
@@ -256,13 +280,16 @@ JAM1_UPA04 <- JAM1_UPA04 %>%
          area_basal = NA,
          altura = NA,
          volume = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+# check trees were lost or duplicated
+n_before <- dim(JAM1_UPA04)[1]
 
 # post-harvest
 jam1_upa04 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/UMF1_UPA4_Campos_Movimentação.csv")
 jam1_upa04 <- jam1_upa04 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -270,40 +297,27 @@ jam1_upa04 <- jam1_upa04 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa04 <- left_join(JAM1_UPA04, jam1_upa04, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa04 <- left_join(JAM1_UPA04, jam1_upa04, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, data_corte, n_toras, volume,
          lat, lon)
 jam1_upa04
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa04)[1]
+n_before-n_after
+
 # check
 options(sf_max.plot=1)
 plot(jam1_upa04)
 
-# there is a problem: infinite values in geometry
-# remove them
-st_bbox(JAM1_UPA04) # check bounding box: there are Inf values
-# redefine bounding box
-newXmax <- tail(sort((st_coordinates(st_centroid(JAM1_UPA04))[,1])))
-newXmax <- max(newXmax[!is.infinite(newXmax)])
-newYmax <- tail(sort((st_coordinates(st_centroid(JAM1_UPA04))[,2])))
-newYmax <- max(newYmax[!is.infinite(newYmax)])
-# create a polygon to clip off outliers (Inf values) 
-bb <- st_bbox(JAM1_UPA04)
-bb[3] <- newXmax
-bb[4] <- newYmax
-# Make this a polygon
-bpoly <- st_as_sfc(bb)
-# Crop JAM1_UPA04 data with this polygon
-JAM1_UPA04 <- st_intersection(JAM1_UPA04, bpoly)
-# Plot it
-plot(JAM1_UPA04)
 
 
 #-----UPA-05
@@ -318,10 +332,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA05)) %>%
          lon = X)
 JAM1_UPA05 <- bind_cols(JAM1_UPA05,coords)
 
+head(JAM1_UPA05)
+
 # fix column names and formats
 names(JAM1_UPA05) # check names
 JAM1_UPA05 <- JAM1_UPA05 %>%
-  rename(arvore = INDICE,
+  rename(id_arvore = INDICE, # assuming this is the ID column
          nome_comum = Espécie,
          volume = Volume) %>%
   mutate(umf = "umf-1",
@@ -331,13 +347,18 @@ JAM1_UPA05 <- JAM1_UPA05 %>%
          area_basal = NA,
          altura = NA,
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+n_before <- dim(JAM1_UPA05)[1]
 
 # post-harvest
 # MISSING DATA!
 
-
+# check trees were lost or duplicated
+#n_before 
+#n_after <- dim(jam1_upa05)[1]
+#n_before-n_after
 
 
 #-----UPA-06
@@ -352,10 +373,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA06)) %>%
          lon = X)
 JAM1_UPA06 <- bind_cols(JAM1_UPA06,coords)
 
+head(JAM1_UPA06)
+
 # fix column names and formats
 names(JAM1_UPA06) # check names
 JAM1_UPA06 <- JAM1_UPA06 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -365,39 +388,44 @@ JAM1_UPA06 <- JAM1_UPA06 %>%
   mutate(umf = "umf-1",
          upa = "upa-6",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+n_before <- dim(JAM1_UPA06)[1]
 
 # post-harvest
 jam1_upa06 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2016_UPA_6.csv")
 jam1_upa06 <- jam1_upa06 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2016,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa06 <- left_join(JAM1_UPA06, jam1_upa06, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa06 <- left_join(JAM1_UPA06, jam1_upa06, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa06
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa06)[1]
+n_before-n_after
+
 # check
 options(sf_max.plot=1)
 plot(jam1_upa06)
-
-
 
 
 #-----UPA-07
@@ -412,10 +440,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA07)) %>%
          lon = X)
 JAM1_UPA07 <- bind_cols(JAM1_UPA07,coords)
 
+head(JAM1_UPA07)
+
 # fix column names and formats
 names(JAM1_UPA07) # check names
 JAM1_UPA07 <- JAM1_UPA07 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -425,33 +455,40 @@ JAM1_UPA07 <- JAM1_UPA07 %>%
   mutate(umf = "umf-1",
          upa = "upa-7",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+n_before<- dim(JAM1_UPA07)[1]
 
 # post-harvest
 jam1_upa07 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2020_UPA_7.csv")
 jam1_upa07 <- jam1_upa07 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2007,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa07 <- left_join(JAM1_UPA07, jam1_upa07, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa07 <- left_join(JAM1_UPA07, jam1_upa07, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa07
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa07)[1]
+n_before-n_after
 
 # check
 options(sf_max.plot=1)
@@ -470,10 +507,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA08)) %>%
          lon = X)
 JAM1_UPA08 <- bind_cols(JAM1_UPA08,coords)
 
+head(JAM1_UPA08)
+
 # fix column names and formats
 names(JAM1_UPA08) # check names
 JAM1_UPA08 <- JAM1_UPA08 %>%
-  rename(arvore = Arvore,
+  rename(id_arvore = Arvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -483,33 +522,40 @@ JAM1_UPA08 <- JAM1_UPA08 %>%
   mutate(umf = "umf-1",
          upa = "upa-8",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+n_before <- dim(JAM1_UPA08)[1]
 
 # post-harvest
 jam1_upa08 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2019_UPA_8.csv")
 jam1_upa08 <- jam1_upa08 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2019,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa08 <- left_join(JAM1_UPA08, jam1_upa08, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa08 <- left_join(JAM1_UPA08, jam1_upa08, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa08
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa08)[1]
+n_before-n_after
 
 # check
 options(sf_max.plot=1)
@@ -528,10 +574,12 @@ coords <- data.frame(st_coordinates(JAM1_UPA09)) %>%
          lon = X)
 JAM1_UPA09 <- bind_cols(JAM1_UPA09,coords)
 
+head(JAM1_UPA09)
+
 # fix column names and formats
 names(JAM1_UPA09) # check names
 JAM1_UPA09 <- JAM1_UPA09 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -541,33 +589,41 @@ JAM1_UPA09 <- JAM1_UPA09 %>%
   mutate(umf = "umf-1",
          upa = "upa-9",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
+
+n_before <- dim(JAM1_UPA09)[1]
 
 # post-harvest
 jam1_upa09 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2018_UPA_9.csv")
 jam1_upa09 <- jam1_upa09 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2018,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa09 <- left_join(JAM1_UPA09, jam1_upa09, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa09 <- left_join(JAM1_UPA09, jam1_upa09, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa09
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa09)[1]
+n_before-n_after
+
 
 # check
 options(sf_max.plot=1)
@@ -586,10 +642,13 @@ coords <- data.frame(st_coordinates(JAM1_UPA10)) %>%
          lon = X)
 JAM1_UPA10 <- bind_cols(JAM1_UPA10,coords)
 
+head(JAM1_UPA10)
+n_before <- dim(JAM1_UPA10)[1]
+
 # fix column names and formats
 names(JAM1_UPA10) # check names
 JAM1_UPA10 <- JAM1_UPA10 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -599,33 +658,38 @@ JAM1_UPA10 <- JAM1_UPA10 %>%
   mutate(umf = "umf-1",
          upa = "upa-10",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
 jam1_upa10 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2017_UPA_10.csv")
 jam1_upa10 <- jam1_upa10 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2017,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa10 <- left_join(JAM1_UPA10, jam1_upa10, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa10 <- left_join(JAM1_UPA10, jam1_upa10, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa10
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa10)[1]
+n_before-n_after
 
 # check
 options(sf_max.plot=1)
@@ -645,10 +709,13 @@ coords <- data.frame(st_coordinates(JAM1_UPA11)) %>%
          lon = X)
 JAM1_UPA11 <- bind_cols(JAM1_UPA11,coords)
 
+head(JAM1_UPA11)
+n_before <- dim(JAM1_UPA11)[1]
+
 # fix column names and formats
 names(JAM1_UPA11) # check names
 JAM1_UPA11 <- JAM1_UPA11 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -658,39 +725,42 @@ JAM1_UPA11 <- JAM1_UPA11 %>%
   mutate(umf = "umf-1",
          upa = "upa-11",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
 jam1_upa11 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2015_UPA_11.csv")
 jam1_upa11 <- jam1_upa11 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2015,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa11 <- left_join(JAM1_UPA11, jam1_upa11, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa11 <- left_join(JAM1_UPA11, jam1_upa11, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa11
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa11)[1]
+n_before-n_after
+
 # check
 options(sf_max.plot=1)
 plot(jam1_upa11)
-
-
 
 
 #-----UPA-13
@@ -705,10 +775,13 @@ coords <- data.frame(st_coordinates(JAM1_UPA13)) %>%
          lon = X)
 JAM1_UPA13 <- bind_cols(JAM1_UPA13,coords)
 
+head(JAM1_UPA13)
+n_before <- dim(JAM1_UPA13)[1]
+
 # fix column names and formats
 names(JAM1_UPA13) # check names
 JAM1_UPA13 <- JAM1_UPA13 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pre = Nome_cient,
          nome_comum = Nome_comum,
          dap = DAP,
@@ -718,33 +791,38 @@ JAM1_UPA13 <- JAM1_UPA13 %>%
   mutate(umf = "umf-1",
          upa = "upa-13",
          status = NA) %>%
-  select(umf, upa, arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
+  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, volume,
          status)
 
 # post-harvest
 jam1_upa13 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/Relatorio_Exploração_por_Safra_JAM_UMF_I_2021_UPA_13.csv")
 jam1_upa13 <- jam1_upa13 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          #data_corte = `Data Corte`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = str_remove(arvore, "^0+"), # remove leading zeros
-         arvore = as.numeric(arvore),
+  mutate(id_arvore = str_remove(id_arvore, "^0+"), # remove leading zeros
+         id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2021,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam1_upa13 <- left_join(JAM1_UPA13, jam1_upa13, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam1_upa13 <- left_join(JAM1_UPA13, jam1_upa13, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa13
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam1_upa13)[1]
+n_before-n_after
 
 # check
 options(sf_max.plot=1)
@@ -757,6 +835,21 @@ jam1 <- bind_rows(jam1_upa01, jam1_upa02, jam1_upa03, jam1_upa04, jam1_upa06,
           jam1_upa07, jam1_upa08, jam1_upa09, jam1_upa10, jam1_upa11, jam1_upa13)
 # NB! jam1_upa05 is not on the list because it lacked post-harvest data
 dim(jam1)
+
+# just a check:
+# compare especie_pre and especie_pos to see if left_join was correct
+head(jam1_upa01[!is.na(jam1_upa01$especie_pos),])
+head(jam1_upa02[!is.na(jam1_upa02$especie_pos),])
+head(jam1_upa03[!is.na(jam1_upa03$especie_pos),])
+head(jam1_upa04[!is.na(jam1_upa04$especie_pos),])
+head(jam1_upa06[!is.na(jam1_upa06$especie_pos),])
+head(jam1_upa07[!is.na(jam1_upa07$especie_pos),])
+head(jam1_upa08[!is.na(jam1_upa08$especie_pos),])
+head(jam1_upa09[!is.na(jam1_upa09$especie_pos),])
+head(jam1_upa10[!is.na(jam1_upa10$especie_pos),])
+head(jam1_upa11[!is.na(jam1_upa11$especie_pos),])
+head(jam1_upa13[!is.na(jam1_upa13$especie_pos),])
+
 
 
 ##---------- UMF 3 ----------#
@@ -773,10 +866,13 @@ coords <- data.frame(st_coordinates(JAM3_UPA01)) %>%
          lon = X)
 JAM3_UPA01 <- bind_cols(JAM3_UPA01,coords)
 
+head(JAM3_UPA01)
+n_before <- dim(JAM3_UPA01)[1]
+
 # fix column names and formats
 names(JAM3_UPA01) # check names
 JAM3_UPA01 <- JAM3_UPA01 %>%
-  rename(arvore = Nº_da_Árv_,
+  rename(id_arvore = Nº_da_Árv_,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__m_,
@@ -784,17 +880,16 @@ JAM3_UPA01 <- JAM3_UPA01 %>%
          volume = Volume_IBD) %>%
   mutate(umf = "umf-3",
          upa = "upa-1",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          area_basal = NA,
-         volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa01 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/UMF3_UPA1_Campos_Movimentação.csv")
 jam3_upa01 <- jam3_upa01 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -802,22 +897,30 @@ jam3_upa01 <- jam3_upa01 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa01 <- left_join(JAM3_UPA01, jam3_upa01, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa01 <- left_join(JAM3_UPA01, jam3_upa01, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam3_upa01
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam3_upa01)[1]
+n_before-n_after
+
+print(jam3_upa01[!is.na(jam3_upa01$especie_pos),], n=50)
+# NB! pre and post names do not match!!!!
+# this mean we cant use id_arvore to match the two datasets!
+
 # check
 options(sf_max.plot=1)
 plot(jam3_upa01)
-
 
 
 
@@ -835,10 +938,13 @@ coords <- data.frame(st_coordinates(JAM3_UPA02)) %>%
          lon = X)
 JAM3_UPA02 <- bind_cols(JAM3_UPA02,coords)
 
+head(JAM3_UPA02)
+n_before <- dim(JAM3_UPA02)[1]
+
 # fix column names and formats
 names(JAM3_UPA02) # check names
 JAM3_UPA02 <- JAM3_UPA02 %>%
-  rename(arvore = Nº_da_Ár,
+  rename(id_arvore = Nº_da_Ár,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -846,18 +952,18 @@ JAM3_UPA02 <- JAM3_UPA02 %>%
          volume = Volume_Aju) %>%
   mutate(umf = "umf-3",
          upa = "upa-2",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa02 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/UMF3_UPA2_Campos_Movimentação.csv")
 jam3_upa02 <- jam3_upa02 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -865,22 +971,28 @@ jam3_upa02 <- jam3_upa02 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa02 <- left_join(JAM3_UPA02, jam3_upa02, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa02 <- left_join(JAM3_UPA02, jam3_upa02, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam3_upa02
 
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam3_upa02)[1]
+n_before-n_after
+
+print(jam3_upa02[!is.na(jam3_upa02$especie_pos),], n=50)
+
 # check
 options(sf_max.plot=1)
 plot(jam3_upa02)
-
 
 
 #-----UPA-03
@@ -896,10 +1008,13 @@ coords <- data.frame(st_coordinates(JAM3_UPA03)) %>%
          lon = X)
 JAM3_UPA03 <- bind_cols(JAM3_UPA03,coords)
 
+head(JAM3_UPA03)
+n_before <- dim(JAM3_UPA03)[1]
+
 # fix column names and formats
 names(JAM3_UPA03) # check names
 JAM3_UPA03 <- JAM3_UPA03 %>%
-  rename(arvore = Nº_da_Ár,
+  rename(id_arvore = Nº_da_Ár,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -907,18 +1022,18 @@ JAM3_UPA03 <- JAM3_UPA03 %>%
          volume = Vol_aj__CS) %>%
   mutate(umf = "umf-3",
          upa = "upa-3",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa03 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/UMF3_UPA3_Campos_Movimentação.csv")
 jam3_upa03 <- jam3_upa03 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -926,17 +1041,26 @@ jam3_upa03 <- jam3_upa03 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa03 <- left_join(JAM3_UPA03, jam3_upa03, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa03 <- left_join(JAM3_UPA03, jam3_upa03, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam3_upa03
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam3_upa03)[1]
+n_before-n_after
+
+print(jam3_upa03[!is.na(jam3_upa03$especie_pos),], n=50)
+# NB! pre and post names do not match!!!!
+# this mean we cant use id_arvore to match the two datasets!
 
 # check
 options(sf_max.plot=1)
@@ -957,10 +1081,13 @@ coords <- data.frame(st_coordinates(JAM3_UPA04)) %>%
          lon = X)
 JAM3_UPA04 <- bind_cols(JAM3_UPA04,coords)
 
+head(JAM3_UPA04)
+n_before <- dim(JAM3_UPA04)[1]
+
 # fix column names and formats
 names(JAM3_UPA04) # check names
 JAM3_UPA04 <- JAM3_UPA04 %>%
-  rename(arvore = Nº_da_Árv_,
+  rename(id_arvore = Nº_da_Árv_,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -968,19 +1095,19 @@ JAM3_UPA04 <- JAM3_UPA04 %>%
          volume = Volume_aj) %>%
   mutate(umf = "umf-3",
          upa = "upa-4",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 # NB! post-harvest data is missing from Shaura's SFB files
 jam3_upa04 <- read_csv("")
 jam3_upa04 <- jam3_upa04 %>%
-  rename(arvore = Árvore,
+  rename(id_arvore = Árvore,
          especie_pos = Espécie,
          data_corte = `Data Corte`,
          volume_tora = `Volume Tora`)  %>%
@@ -988,17 +1115,26 @@ jam3_upa04 <- jam3_upa04 %>%
          ano_exploracao = lubridate::year(data_corte),
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa04 <- left_join(JAM3_UPA04, jam3_upa04, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa04 <- left_join(JAM3_UPA04, jam3_upa04, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam3_upa04
+
+# check trees were lost or duplicated
+n_before 
+n_after <- dim(jam3_upa04)[1]
+n_before-n_after
+
+print(jam3_upa04[!is.na(jam3_upa04$especie_pos),], n=50)
+# NB! pre and post names do not match!!!!
+# this mean we cant use id_arvore to match the two datasets!
 
 # check
 options(sf_max.plot=1)
@@ -1010,7 +1146,7 @@ plot(jam3_upa04)
 #-----UPA-05
 
 # read pre-harvest shapefile
-JAM3_UPA05 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2015_UPA5/Arvores.shp")
+JAM3_UPA05 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2015_UPA5/id_arvores.shp")
 
 # convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA05 <- st_transform(JAM3_UPA05, 4326)
@@ -1022,39 +1158,39 @@ JAM3_UPA05 <- bind_cols(JAM3_UPA05,coords)
 # fix column names and formats
 names(JAM3_UPA05) # check names
 JAM3_UPA05 <- JAM3_UPA05 %>%
-  rename(arvore = num_arvore,
+  rename(id_arvore = num_id_arvore,
          nome_comum = nom_com,
          especie_pre = nom_cient,
          dap = dap_cm,
          altura = altura_m) %>%
   mutate(umf = "umf-3",
          upa = "upa-5",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa05 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_III_2015_UPA_5.csv")
 jam3_upa05 <- jam3_upa05 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2015,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa05 <- left_join(JAM3_UPA05, jam3_upa05, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa05 <- left_join(JAM3_UPA05, jam3_upa05, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1072,7 +1208,7 @@ plot(jam3_upa05)
 #-----UPA-06
 
 # read pre-harvest shapefile
-JAM3_UPA06 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2016_UPA6/Arvores3.shp")
+JAM3_UPA06 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_III/2016_UPA6/id_arvores3.shp")
 
 # convert from utm to decimal degrees and add lat lon columns
 JAM3_UPA06 <- st_transform(JAM3_UPA06, 4326)
@@ -1084,39 +1220,39 @@ JAM3_UPA06 <- bind_cols(JAM3_UPA06,coords)
 # fix column names and formats
 names(JAM3_UPA06) # check names
 JAM3_UPA06 <- JAM3_UPA06 %>%
-  rename(arvore = num_arvore,
+  rename(id_arvore = num_id_arvore,
          nome_comum = nom_com,
          especie_pre = nom_cient,
          dap = dap_cm,
          altura = altura_m) %>%
   mutate(umf = "umf-3",
          upa = "upa-6",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa06 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_III_2016_UPA_6.csv")
 jam3_upa06 <- jam3_upa06 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2016,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa06 <- left_join(JAM3_UPA06, jam3_upa06, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa06 <- left_join(JAM3_UPA06, jam3_upa06, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1143,7 +1279,7 @@ JAM3_UPA11 <- bind_cols(JAM3_UPA11,coords)
 # fix column names and formats
 names(JAM3_UPA11) # check names
 JAM3_UPA11 <- JAM3_UPA11 %>%
-  rename(arvore = Id_Árvore,
+  rename(id_arvore = Id_Árvore,
          nome_comum = Espécie_C,
          especie_pre = Field10,
          dap = DAP,
@@ -1151,31 +1287,31 @@ JAM3_UPA11 <- JAM3_UPA11 %>%
          volume = Volume_Est) %>%
   mutate(umf = "umf-3",
          upa = "upa-11",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa11 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_III_2018_UPA_11.csv")
 jam3_upa11 <- jam3_upa11 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2018,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa11 <- left_join(JAM3_UPA11, jam3_upa11, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa11 <- left_join(JAM3_UPA11, jam3_upa11, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1202,7 +1338,7 @@ JAM3_UPA12 <- bind_cols(JAM3_UPA12,coords)
 # fix column names and formats
 names(JAM3_UPA12) # check names
 JAM3_UPA12 <- JAM3_UPA12 %>%
-  rename(arvore = Id,
+  rename(id_arvore = Id,
          nome_comum = Espécie_C,
          especie_pre = Espécie_1,
          dap = DAP,
@@ -1210,31 +1346,31 @@ JAM3_UPA12 <- JAM3_UPA12 %>%
          volume = Volume_Est) %>%
   mutate(umf = "umf-3",
          upa = "upa-12",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa12 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_III_2019_UPA_12.csv")
 jam3_upa12 <- jam3_upa12 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2019,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa12 <- left_join(JAM3_UPA12, jam3_upa12, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa12 <- left_join(JAM3_UPA12, jam3_upa12, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1260,7 +1396,7 @@ JAM3_UPA14 <- bind_cols(JAM3_UPA14,coords)
 # fix column names and formats
 names(JAM3_UPA14) # check names
 JAM3_UPA14 <- JAM3_UPA14 %>%
-  rename(arvore = Nº_da_Ár,
+  rename(id_arvore = Nº_da_Ár,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -1268,31 +1404,31 @@ JAM3_UPA14 <- JAM3_UPA14 %>%
          volume = Volume_Aju) %>%
   mutate(umf = "umf-3",
          upa = "upa-14",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa14 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_III_2017_UPA_14.csv")
 jam3_upa14 <- jam3_upa14 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2017,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa14 <- left_join(JAM3_UPA14, jam3_upa14, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa14 <- left_join(JAM3_UPA14, jam3_upa14, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1321,7 +1457,7 @@ JAM3_UPA15 <- bind_cols(JAM3_UPA15,coords)
 # fix column names and formats
 names(JAM3_UPA15) # check names
 JAM3_UPA15 <- JAM3_UPA15 %>%
-  rename(arvore = Nº_da_Ár,
+  rename(id_arvore = Nº_da_Ár,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -1329,31 +1465,31 @@ JAM3_UPA15 <- JAM3_UPA15 %>%
          volume = Volume_Aju) %>%
   mutate(umf = "umf-3",
          upa = "upa-15",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa15 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_IV_2021_UPA_15.csv")
 jam3_upa15 <- jam3_upa15 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2021,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa15 <- left_join(JAM3_UPA15, jam3_upa15, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa15 <- left_join(JAM3_UPA15, jam3_upa15, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1382,7 +1518,7 @@ JAM3_UPA16 <- bind_cols(JAM3_UPA16,coords)
 # fix column names and formats
 names(JAM3_UPA16) # check names
 JAM3_UPA16 <- JAM3_UPA16 %>%
-  rename(arvore = Nº_da_Ár,
+  rename(id_arvore = Nº_da_Ár,
          nome_comum = Nome_Vulga,
          especie_pre = Nome_cient,
          dap = DAP__cm_,
@@ -1390,31 +1526,31 @@ JAM3_UPA16 <- JAM3_UPA16 %>%
          volume = Volume_Aju) %>%
   mutate(umf = "umf-3",
          upa = "upa-16",
-         arvore = as.numeric(arvore),
+         id_arvore = as.numeric(id_arvore),
          dap = dap/100,
          area_basal = NA,
          status = NA) %>%
-  select(umf, upa, arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 
 # post-harvest
 jam3_upa16 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_III/Relatorio_Exploração_por_Safra_JAM_UMF_IV_2020_UPA_16.csv")
 jam3_upa16 <- jam3_upa16 %>%
-  rename(arvore = `NÚMERO DA ÁRVORE`,
+  rename(id_arvore = `NÚMERO DA ÁRVORE`,
          especie_pos = `NOME CIENTÍFICO`,
          volume_tora = "VOLUME M³")  %>%
-  mutate(arvore = as.numeric(arvore),
+  mutate(id_arvore = as.numeric(id_arvore),
          data_corte = NA,
          ano_exploracao = 2020,
          volume_tora = str_replace(volume_tora, ",", "."),
          volume_tora = as.numeric(volume_tora)) %>%
-  group_by(arvore, especie_pos, data_corte, ano_exploracao) %>%
+  group_by(id_arvore, especie_pos, data_corte, ano_exploracao) %>%
   summarize(n_toras = n(),
             volume_toras = sum(volume_tora, na.rm = TRUE))
 
 # join pre and post-harvest
-jam3_upa16 <- left_join(JAM3_UPA16, jam3_upa16, by = "arvore") %>%
-  select(umf, upa, ano_exploracao, arvore, especie_pre, especie_pos, nome_comum,
+jam3_upa16 <- left_join(JAM3_UPA16, jam3_upa16, by = "id_arvore") %>%
+  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
@@ -1469,7 +1605,7 @@ trees <- read_csv("/home/elildojr/Documents/r/primates-and-trees/jamari_trees/al
 trees <- trees %>%
   rename(status2 = status)
 
-# trees does not have arvore ID for matching
+# trees does not have id_arvore ID for matching
 # try matching using lat lon, but pay attention to decimal precision
 test <- left_join(jam, trees, by = c("lat", "lon"))
 dim(jam)
@@ -1480,15 +1616,15 @@ test %>% filter(status2 == "explored") %>%
   print(n=100)
 
 jam <- jam %>%
-  filter(!is.na(arvore))
+  filter(!is.na(id_arvore))
 
 jam %>% nrow()
 
 jam %>%
-  filter(is.na(arvore)) %>% nrow()
+  filter(is.na(id_arvore)) %>% nrow()
 
 jam %>%
-  distinct(umf, upa, arvore) %>% nrow()
+  distinct(umf, upa, id_arvore) %>% nrow()
 
 #----- write csv for next step -----
 
@@ -1501,7 +1637,7 @@ write.csv(jam, here("data", "trees_merged.csv"), row.names = FALSE)
 #--------------------------------------------------
 
 #---------- harvested trees ----------#
-harvested_all <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/arvores-abatidas-2020-10-10.shp")
+harvested_all <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/id_arvores-abatidas-2020-10-10.shp")
 options(sf_max.plot=1)
 plot(harvested_all)
 
