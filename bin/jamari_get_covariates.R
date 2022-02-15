@@ -2,6 +2,7 @@
 #----- load library
 library(here)
 library(tidyverse)
+library(lubridate)
 #library(stringr)
 library(gsheet)
 library(sf)
@@ -89,8 +90,15 @@ st_is_longlat(trees_geo) # check
 trees_geo <- st_transform(trees_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km")
 
 # associate trees to buffers
-trees_250m <- st_join(trees_geo, buffer_250m, join=st_within)
-trees_500m <- st_join(trees_geo, buffer_500m, join=st_within)
+trees_250m <- st_join(trees_geo, buffer_250m, join=st_within) %>%
+  filter(!is.na(placename)) %>% # remove trees outside buffers
+  st_drop_geometry()
+trees_250m
+
+trees_500m <- st_join(trees_geo, buffer_500m, join=st_within) %>%
+  filter(!is.na(placename)) %>% # remove trees outside buffers
+  st_drop_geometry()
+trees_500m
 
 # calculate basal area in m2 for each individual tree
 trees_250m <- trees_250m %>%
@@ -100,14 +108,12 @@ trees_500m <- trees_500m %>%
 
 # sum basal area of harvested trees by location
 harvested_250 <- trees_250m %>%
-  st_drop_geometry() %>% 
   filter(status == "explored") %>%
   group_by(placename) %>%
   summarise(intensity_250 = sum(ba))
 harvested_250
 
 harvested_500 <- trees_500m %>%
-  st_drop_geometry() %>% 
   filter(status == "explored") %>%
   group_by(placename) %>%
   summarise(intensity_500 = sum(ba))
@@ -115,64 +121,82 @@ harvested_500
 
 # now add harvest intensity to locations_in_upas
 locations_with_trees <- locations_in_upas %>%
+  st_drop_geometry() %>%
   left_join(harvested_250, by = "placename") %>%
   left_join(harvested_500, by = "placename") %>%
-  st_drop_geometry()
+  replace(is.na(.), 0)
 locations_with_trees %>%
   print(n=Inf)
 
 # save covars file
 saveRDS(locations_with_trees, here("data", "jamari_covars_2022.rds"))
 
+#----- put covariate data in multi-year format for HMSC
 
-# put covariate data in multi-year format for HMSC
+# to assign logging intensities to sites we must check in which year each site was logged
+# lets do this:
 
-images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1jCr2QMCE4lK78H4MW2cjJjckIQZEIdM1mAmXeZ2YtFc/edit?usp=sharing"))
-# get coordinates and start/end dates from deployments file and add this into images
-jamari <- left_join(images, deployments[,c("deployment_id", "placename", 
-                                           "longitude", "latitude", "start_date","end_date")])
-jamari %>%
-  group_by(placename, sampling_event) %>%
-  count()
+# get location and years in which they were sampled
+locations_and_years <- deployments %>%
+  mutate(start_date = ymd_hms(start_date),
+         sampling_event = format(start_date, format="%Y")) %>%
+  distinct(placename, sampling_event) %>%
+  rename(year = sampling_event) %>%
+  mutate(year = as.numeric(year)) %>%
+  arrange(placename)
+locations_and_years
 
-trees_250m %>%
-  st_drop_geometry() %>%
-  group_by(umf, upa, year_explored) %>%
-  count() %>%
-  mutate(n = ifelse(n > 0, 1, 0)) %>%
-  print(n = Inf)
+# get years in which each location was harvested
+harvested_500 <- trees_500m %>%
+  filter(status == "explored") %>%
+  group_by(placename, year_explored) %>%
+  summarise(intensity_500 = sum(ba)) %>%
+  rename(year = year_explored)
+harvested_500
 
-trees_500m %>%
-  st_drop_geometry() %>%
-  group_by(umf, upa, year_explored) %>%
-  count() %>%
-  mutate(n = ifelse(n > 0, 1, 0)) %>%
-  print(n = Inf)
+# sum basal area of harvested trees by location and year
+harvested_250 <- trees_250m %>%
+  filter(status == "explored") %>%
+  group_by(placename, year_explored) %>%
+  summarise(intensity_250 = sum(ba)) %>%
+  rename(year = year_explored)
+harvested_250
 
-# create logging status by year (logged/unlogged)
-logStatus <- table(umf.upas$Camera.Trap.Name, umf.upas$YearExplored) # based on umf.upas
-#logStatus <- table(covars$Camera.Trap.Name, covars$YearExplored) # based on covars
-#dimnames(logStatus)[[2]] <- c("2008", "2012","2013","2014","2015","2016","2017","2018","2019")
-for(i in 1:nrow(logStatus)) {
-  logStatus[i,] <- cummax(logStatus[i,])
+harvest <- left_join(harvested_500, harvested_250, by=c("placename", "year")) %>%
+  replace_na(list(intensity_500 = 0, intensity_250 = 0)) %>%
+  arrange(placename)
+harvest %>%
+  print(n=Inf)
+
+
+locations_and_years <- locations_and_years %>%
+  mutate(intensity_500 = as.numeric(NA),
+         intensity_250 = as.numeric(NA))
+locations_and_years
+
+# fill all columns of locations_and_years with intensity values
+for(i in 1:nrow(harvest)) {
+  for(j in 1:nrow(locations_and_years)) {
+    if(harvest[i, "placename"] == locations_and_years[i, "placename"] &
+       locations_and_years[i, "year"] >= harvest[i, "year"]) {
+      locations_and_years[i, c("intensity_500", "intensity_250")] <-
+        harvest[i, c("intensity_500", "intensity_250")]
+    } else {
+      locations_and_years[i, c("intensity_500", "intensity_250")] <- 0
+    }
+  }
 }
-logStatus[logStatus >= 1] <- 1
-# we only need 2016 to 2019 data
-logStatus <- logStatus[,6:9]
-logStatus <- as.data.frame.matrix(logStatus)
-head(logStatus)
+locations_and_years
 
-logStatus$Camera.Trap.Name <- rownames(logStatus)
-logStatus <- logStatus[,c("Camera.Trap.Name", "2016", "2017", "2018", "2019")]
-row.names(logStatus) <- NULL
-names(logStatus) <- c("Camera.Trap.Name", "status.16", "status.17", "status.18", "status.19")
-head(logStatus)
-dim(logStatus)
+# save  file
+saveRDS(locations_and_years, here("data", "logging_intensity_multi_year.rds"))
 
-logStatus <- merge(logStatus, umf.upas[c("Camera.Trap.Name", "UMF")], by="Camera.Trap.Name")
-#logStatus <- subset(logStatus, UMF != "TEAM")
-logStatus$UMF <- NULL
-head(logStatus)
-dim(logStatus)
 
+
+# an alternative that was not needed
+#harvest500 <- harvest %>% 
+#  select(-intensity_250) %>%
+#  pivot_wider(names_from = "year", values_from = intensity_500 ) %>%
+#  select(`2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`, `NA`) %>%
+#  print(n=Inf)
 

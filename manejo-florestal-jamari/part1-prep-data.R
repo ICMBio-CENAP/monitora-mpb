@@ -132,18 +132,36 @@ S
 
 # as a test we will invent a dummy covariate that varies across years
 # to do this, let us letf_join S with our covars file and add the dummy variable
-covars <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
-covars <- covars %>% 
-  rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
-  filter(placename %in% S$placename) %>%
-  mutate(placename=as.factor(placename)) %>%
-  select(placename, elevation, slope, dist_water, hfi)
+#covars <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
+#covars <- covars %>% 
+#  rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
+#  filter(placename %in% S$placename) %>%
+#  mutate(placename=as.factor(placename)) %>%
+#  select(placename, elevation, slope, dist_water, hfi)
+#covars
+
+covars <- readRDS(here("data", "jamari_covars_2022.rds"))
+covars
+# remove intensity because we will use a year-specific logging intensity variable
+covars <- covars %>%
+  select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500)) %>%
+  mutate(dummy_variable1 = runif(nrow(covars), 0,4),
+         dummy_variable2 = rnorm(nrow(covars), 0,1))
 covars
 
 # create X using left_join
+# so that X will also have duplicated sites (as this is a multi-year study)
 X <- S %>%
-  left_join(covars, by = "placename") %>%
-  mutate(dummy_variable = runif(nrow(S), 0,4))
+  left_join(covars, by = "placename")
+X
+
+# add multi-year logging intensity to X
+logging_intensity <- readRDS(here("data", "logging_intensity_multi_year.rds")) %>%
+  rename(sampling_event = year) %>%
+  mutate(sampling_event = as.character(sampling_event))
+logging_intensity
+
+X <- left_join(X, logging_intensity, by = c("placename", "sampling_event"))
 X
 
 

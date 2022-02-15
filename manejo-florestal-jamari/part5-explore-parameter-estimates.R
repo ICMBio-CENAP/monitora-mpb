@@ -1,5 +1,4 @@
-# THIS SCRIPT EXPLORES THE PARAMETER ESTIMATES OF HMSC MODELS FOR THE PLANT EXAMPLE (SECTION 6.7) OF THE BOOK
-# Ovaskainen, O. and Abrego, N. 2020. Joint Species Distribution Modelling - With Applications in R. Cambridge University Press.
+# Explore parameter estimates of models for Jamari National Forest
 
 # The preliminaries are as in script S1
 
@@ -31,92 +30,125 @@ m <- model.pa
 #load(filename)
 #m = model.abu
 
-# We first examine the beta-parameters, i.e. the species niches
-# The parameter estimates of species niches show that many species respond 
-# negatively to the topographic moisture gradient.
-# This means that they are more likely to be present (model.pa) and more 
-# abundant (model.abu) in sites with low value of TMG,
-# i.e. in sites located in mesic, north-facing slopes.
+
+#----- Beta parameters (species niches, i.e. responses to covariates)
 
 postBeta <- getPostEstimate(m, parName="Beta")
-?plotBeta
+postBeta
+
+# the command above provides just summaries, we want the quantiles
+post <- convertToCodaObject(m)
+print(summary(mpost$Beta))
+summary(mpost$Beta)[["quantiles"]]
+
+#convert to tibble to highlight negative values
+betas <- tibble(parameter = dimnames(summary(mpost$Beta)[["quantiles"]])[[1]],
+                lower = summary(mpost$Beta)[["quantiles"]][,1],
+                mean = summary(mpost$Beta)[["quantiles"]][,3], # mean or median?
+                upper = summary(mpost$Beta)[["quantiles"]][,5] )
+betas %>%
+  print(n = Inf)
+
+# check intensity effects
+betas %>%
+  filter(grepl("intensity", parameter))
+                                      
+# check effort effects
+betas %>%
+  filter(grepl("effort", parameter))
+
+# etc for other parameters...
+
+# plot
 par(mar=c(6,10,1,1))
 plotBeta(m, post=postBeta, param="Support", supportLevel = 0.95, spNamesNumbers = c(T,T), covNamesNumbers = c(T,F))
 dev.off()
 
-m$
+# assess parameter estimates numerically
+post <- convertToCodaObject(m)
+print(summary(mpost$Beta))
+# get quantiles for Beta
+# NB! I still have to check how to extract values (indexes etc)
+str(mpost$Beta)
+str(mpost$Beta[1])
 
-# We next examine the gamma-parameters, i.e. the influence of environmental
-# covariates to expected species niches
-# These parameter estimates addresses the main question that we were
-# interested in this case study:
-# is there an association between environmental conditions and species traits?
-# For both models, you should find a negative relationship between the "trait intercept" and TMG,
-# and a positive relationship between C:N ratio and TMG.
-# As the species traits are scaled to zero mean, the result related to the intercept
-# means a typical species (i.e., that with zero C:N ratio) responds negatively to TMG.
-# This reflects the results of species niches, which shows that many species respond negatively to TMG.
-# The positive relationship between C:N ratio and TMG means that those species with
-# a low C:N ratio respond especially negatively to TMG, whereas species with high C:N ratio
-# may respond even positively to it.
-# The results further show a positive relationship between C:N ratio and the
-# "environmental covariate intercept". As the environmental covariates have been
-# scaled to have a zero mean, also this result can be interpreted.
-# It means that species with high C:N ratio are on average more common
-# (in terms of both occurrence and abundance) than species with low C:N ratio.
 
-postGamma = getPostEstimate(m, parName="Gamma")
+#----- Gamma parameters (influence of environmental covariates to expected species niches)
+
+# note that species traits are scaled to zero mean
+postGamma <- getPostEstimate(m, parName="Gamma")
+postGamma
+print(summary(mpost$Gamma))
+
+# plot
 plotGamma(m, post=postGamma, param="Support", supportLevel = 0.95, covNamesNumbers = c(T,F), trNamesNumbers = c(T,F), colorLevels = 3)
 
-# We note that in line with these analyses, Miller et al. (2018) found a strong negative
-# main effect of TMG on abundance, and a strong positive main effect of C:N ratio on abundance.
-# Regarding the relationship between C:N ratio and TMG, Miller et al. (2018) found support
-# with some methods but no support with some other methods. Based on the Hmsc analyses,
-# there is good evidence for such a signal both in the presence-absence pattern, as well as
-# in the abundance pattern. Thus, our analyses give support for the original hypothesis
-# that species occurring on drier and warmer sites have on average higher C:N ratio
-# than those occurring in more moist and cooler sites.
 
-# We next construct gradient plots to illustrate how the species community varies along a given environmental gradient
-# These results show that species richness (generated with measure="S") decreases with TMG,
-# and that community-weighted mean of C:N ratio (generated with measure="T") is on average positive and increases with TMG.
-# Note that with measure="T", we have set index=2, to select the second trait, which is that of CN (the first one is the intercept)
 
-Gradient = constructGradient(m,focalVariable = "elevation")
-predY = predict(m,Gradient = Gradient, expected = TRUE)
+#----- species associations
+
+OmegaCor <- computeAssociations(m)
+OmegaCor
+supportLevel <- 0.95
+for (r in 1:m$nr){
+  plotOrder = corrMatOrder(OmegaCor[[r]]$mean,order="AOE")
+  toPlot = ((OmegaCor[[r]]$support>supportLevel) +
+              (OmegaCor[[r]]$support<(1-supportLevel))>0)*OmegaCor[[r]]$mean
+  par(xpd=T)
+  colnames(toPlot)=rownames(toPlot)=gsub("_"," ",x=colnames(toPlot))
+  corrplot(toPlot[plotOrder,plotOrder], method = "color",
+           col=colorRampPalette(c("blue","white","red"))(200),
+           title="",type="lower",tl.col="black",tl.cex=.7, mar=c(0,0,6,0))
+}
+
+
+#----- Gradient plots
+
+# illustrate how the species community varies along a given environmental gradient
+# can be done for species richness, individual species, traits etc (see help) 
+
+# plot prediction for species richness given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
-plotGradient(m, Gradient, pred=predY, measure="T", index=2, showData = TRUE,  q = prob) # prob should be q
 
-Gradient = constructGradient(m,focalVariable = "dist_water")
-predY = predict(m,Gradient = Gradient, expected = TRUE)
+
+# plot prediction for individual species given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
-plotGradient(m, Gradient, pred=predY, measure="T", index=2, showData = TRUE,  q = prob) # prob should be q
+plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
+             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
 
 
-# To ask how much C:N ratio explains out of the variation in species niches and occurrences,
-# we next compute the variance partitioning.
-# We observe that the C:N ratio explains not only how species respond to TMG,
-# but also a substantial variation in the species intercepts, reflecting the discussion above.
+# plot community-weighed mean values of traits given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="T", index=2, las=1,
+             showData = TRUE, main='Mean body mass (measure="T")')
 
-VP = computeVariancePartitioning(m, group=c(1,1),groupnames = "TMG")
-VP$R2T
 
-# We finally ask if there is evidence phylogenetic signal in the residual variation in species niches,
-# on top of what can be explained by the trait C:N ratio.
-# There is not specific Hmsc functionality for doing so, but we may use the summary function of the coda package
-# We do not find such evidence, as zero is not excluded from the main part
-# of the posterior distribution. Hence we conclude that related species do not respond more
-# similarly to the TMG than unrelated species, beyond to what can be expected based on their C:N ratio.
 
-mpost = convertToCodaObject(m)
-summary(mpost$Rho)$quant
+#----- variance partitioning
 
-# All of the above results are based on the fitted model.
-# But what we did not address yet is how good is the model.
-# One way of examining this is to evaluate the model fit. This is done with the script below
-# We evaluate model fit here in terms of how well the model is able to discriminate presences and absences
+# compute variance partitioning
+VP <- computeVariancePartitioning(m) # we can group predictors for computing/plotting, see help
+VP$vals # variance proportion for each group and species
+VP$R2T # variance among species explained by traits
+VP$R2T$Beta
+VP$R2T$Y
+
+# plot variance partitioning
+plotVariancePartitioning(m, VP) 
+# (the plot can be edited with additional parameters passed to the barplot function)
+
+
+
+#----- Model fit
+
+# how well the model is able to discriminate presences and absences
 # This can be done by computing the model's explanatory power in terms of e.g. TjurR2 or AUC
 # Below we make a plot that compares these two to each other.
 # Note that the AUC values are much higher than the TjurR2 values, even if they measure the fit of exactly the same model.
@@ -127,8 +159,7 @@ MF = evaluateModelFit(hM=m, predY=predY)
 plot(MF$TjurR2,MF$AUC)
 
 # Above we measured the explanatory power of the model.
-# If adding more and more covariates (or random effects), the model can eventually explain all the data
-# Thus it is important to evaluate more critically also the predictive power of the model
+# now evaluate predictive power of the model
 # Predictive power asks how well the model is able to explain data that was not used for model fitting
 # Below we evaluate predictive power by cross-validation
 # As cross-validation requires re-fitting the model many times, this can take a lot of time

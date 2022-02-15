@@ -17,22 +17,59 @@ SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:10]
-Y <- SXY[,11:27]
+X <- SXY[,4:9]
+Y <- SXY[,10:26]
 
 head(S)
 head(X)
 head(Y)
+
+# Check for absent (0) or ubiquitous species (1).
+range(colMeans(Y>0))
+
+min(colSums(Y>0))
+# =1: check how many species are rare and exclude these. 
+# Rare defined as < 5 plot occurrences in the pilot model, to limit processing time.
+
+rarespecies = which(colSums(Y>0)<5)
+length(rarespecies)
+# =49 out of the original 25 species are rare in the pilot dataset. 
+# Excluding these leaves 21 species in the dataset.
+Y = Y[,-rarespecies]
+
+
+hist(colMeans(Y>0),main="prevalence")
+# Most species are rare nonetheless.
+hist(as.matrix(log(Y[Y>0])),main="log abundance conditional on presence")
+
+
+# Species are absent in many plots - if abundance is modelled, need a zero-inflated model. 
+# Choice for the pilot model is a hurdle model: species presence-absence and log(abundance)
+# separately.
+
+hist(rowSums(Y>0))
+# species richness distribution across samples.
+
+plot(X)
+
+# Proposed three X variables for pilot model are: elevation, dist.water, forest
+# Sampling effort is also included, so that the effect of varying sampling effort
+# (N days camera was in use) on the results can be directly estimated.
+
+plot(X[, c("elevation", "dist.water", "forest", "effort")])
+cor(X[, c("elevation", "dist.water", "forest", "effort")])
+
+
+Tr = droplevels(Tr[-rarespecies,])
+# Suggested pilot trait = log.BodyMass.Value
+#Tr$log.BodyMass.Value = log(Tr$BodyMass.Value)
+#summary(Tr)
 
 # What is not always easy is to decide what goes to S and what to X.
 # As a general rule, include in S those variables that you think should be modelled as random effect,
 # and in X those that you think should be modelled as fixed effects.
 # Don't worry if you are not sure which one is the "right choice", we will discuss this with you.
 
-# Check that the data looks as it should!
-View(S)
-View(X)
-View(Y)
 
 # check that community data are numeric and have finite numbers. If the script
 # writes "Y looks OK", you are ok.

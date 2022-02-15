@@ -48,18 +48,19 @@ mpost <- convertToCodaObject(model.pa)
 # Thus, ideally the effective sample size would be 200 as well.
 # But in presence of autocorrelation, the effective sample size will be lower than the actual sample size
 
-ess.beta = effectiveSize(mpost$Beta)
+ess.beta <- effectiveSize(mpost$Beta)
 
-# Our model contains 150 beta-parameters (2 for each of the 75 species)
-# Thus we have 150 effective sample sizes to look at. This is best done with a histogram
+# Our model contains x*y beta-parameters (x for each of the y species)
+# Thus we have x*y effective sample sizes to look at. This is best done with a histogram
 hist(ess.beta, xlab = expression("Effective sample size" ~ beta ~ ""))
-ess.V = effectiveSize(mpost$V)
 
-# As ess.V has only four entries, we just look at it directlt instead of
-# drawing a histogram
+ess.V <- effectiveSize(mpost$V)
+# As ess.V has only four entries, we just look at it directly instead of drawing a histogram
 ess.V
-ess.rho = effectiveSize(mpost$Rho)
-ess.rho
+
+# we did not used Phylo so there is no Rho
+#ess.rho = effectiveSize(mpost$Rho)
+#ess.rho
 
 # We then examine the Gelman diagnostics, i.e. the Potential scale reduction factors
 # This diagnostic compares if different chains (here we have 2 chains) give consistent results
@@ -67,19 +68,18 @@ ess.rho
 # As you increase thinning, you should observe the values getting closer to one.
 # The Gelman diagnostic is often more informative diagnostic than the effective sample size, so if you will use only one of these, we recommend the Gelman diagnostic
 
-psrf.beta = gelman.diag(mpost$Beta,multivariate=FALSE)$psrf
+psrf.beta <- gelman.diag(mpost$Beta,multivariate=FALSE)$psrf
 hist(psrf.beta, xlab = expression("Potential scale reduction factor" ~ beta ~ ""))
-psrf.V = gelman.diag(mpost$V,multivariate=FALSE)$psrf
+psrf.V <- gelman.diag(mpost$V,multivariate=FALSE)$psrf
 psrf.V
-psrf.rho = gelman.diag(mpost$Rho,multivariate=FALSE)$psrf
-psrf.rho
+#psrf.rho = gelman.diag(mpost$Rho,multivariate=FALSE)$psrf
+#psrf.rho
 
 
-
-
-partition = createPartition(model.pa, nfolds = 2,
-                            column = "placename")
+partition <- createPartition(model.pa, nfolds = 2,
+                            column = "sample")
 partition
+
 
 MF = list()
 MFCV = list()

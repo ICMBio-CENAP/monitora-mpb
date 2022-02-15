@@ -35,7 +35,7 @@ head(Y)
 head(Tr)
 
 # XFormula and TrFormula
-XFormula <- ~ elevation + slope + dist_water + dummy_variable + effort
+XFormula <- ~ dummy_variable1 + dummy_variable2 + intensity_500 + effort
 TrFormula <- ~ body_mass + herbivore + carnivore + insectivore + omnivore
 
 # Study design and random levels
@@ -123,4 +123,51 @@ for (thin in c(1,10)) {
 #  filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #  save(model.abu, file=filename)
 #}
+
+#-----------------------------------------
+
+# from Mirkka Jones template: check if we mounted the model etc correctly:
+
+
+head(S)
+plot(S$Longitude, S$Latitude)
+# Note (Mirkka): Samples are highly aggregated within 7 areas (S$Project.Name)
+# so I will not set the model up as spatially explicit, but I will
+# include project name, year and unique sample as factor random effects.
+
+studyDesign = data.frame(project = as.factor(S$Project.Name), year = as.factor(S$Sampling.Event), sample = as.factor(S$unique_sample))
+
+Project = studyDesign$project
+rL.project = HmscRandomLevel(units = levels(Project))
+
+Year = studyDesign$year
+rL.year = HmscRandomLevel(units = levels(Year))
+
+Sample = studyDesign$sample
+rL.sample = HmscRandomLevel(units = levels(Sample))
+
+Ypa = 1*(Y>0)
+Yabu = Y
+Yabu[Y==0] = NA
+Yabu=log(Yabu)
+
+m1 = Hmsc(Y=Ypa, XData = X,  XFormula = XFormula,
+          TrData = Tr,TrFormula = TrFormula,
+          distr="probit",
+          studyDesign=studyDesign,
+          ranLevels={list("project" = rL.project, "year" = rL.year, "sample" = rL.sample)})
+
+m2 = Hmsc(Y=Yabu, YScale = TRUE,
+          XData = X,  XFormula = XFormula,
+          TrData = Tr,TrFormula = TrFormula,
+          distr="normal",
+          studyDesign=studyDesign,
+          ranLevels={list("project" = rL.project, "year" = rL.year, "sample" = rL.sample)})
+
+models = list(m1,m2)
+modelnames = c("presence_absence","abundance_COP")
+
+save(models,modelnames,file = file.path(ModelDir, "unfitted_models"))
+
+
 
