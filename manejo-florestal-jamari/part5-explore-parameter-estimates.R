@@ -37,7 +37,7 @@ postBeta <- getPostEstimate(m, parName="Beta")
 postBeta
 
 # the command above provides just summaries, we want the quantiles
-post <- convertToCodaObject(m)
+post <- convertToCodaObject(model.abu)
 print(summary(mpost$Beta))
 summary(mpost$Beta)[["quantiles"]]
 
@@ -85,9 +85,9 @@ str(mpost$Beta[1])
 # ideally do only for species with significant beta effects
 
 # plot prediction for species richness given by index
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
+Gradient <- constructGradient(m, focalVariable = "intensity_500")
+predY <- predict(m, Gradient = Gradient, expected = TRUE)
+prob <- c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
 
 
@@ -99,14 +99,24 @@ plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
              showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
 
 
+# plot prediction for individual species given by index
+Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=9, las=1,
+             showData = TRUE, main='Nasua nasua occurrence (measure="Y")')
+
+# save last plot as jpeg
+# ggsave only works for ggplot...
+#ggsave('nasua_vs_intensity.jpeg', here("manejo-florestal-jamari", "results"))
+
+
 # plot community-weighed mean values of traits given by index
 Gradient = constructGradient(m, focalVariable = "intensity_500")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="T", index=2, las=1,
              showData = TRUE, main='Mean body mass (measure="T")')
-
-
 
 
 

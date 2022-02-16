@@ -39,7 +39,7 @@ locations_geo <- st_transform(locations_geo, "+proj=utm +zone=20S +datum=WGS84 +
 umf_upas <- st_read("/home/elildojr/Documents/gis/jamari/sfb/umf_upas_utm.shp")
 umf_upas <- st_transform(umf_upas, "+proj=utm +zone=20S +datum=WGS84 +units=km") # transform to metric 
 umf_upas <- umf_upas %>%
-  select(UMF, UPA) %>%
+  dplyr::select(UMF, UPA) %>%
   rename(umf = UMF,
          upa = UPA) %>%
   mutate(umf = tolower(umf),
@@ -52,7 +52,7 @@ umf_upas %>%
 
 # join location and upa data
 locations_in_upas <- st_join(locations_geo, umf_upas, join=st_within) %>%
-  select(placename, longitude, latitude, umf, upa, geometry) %>%
+  dplyr::select(placename, longitude, latitude, umf, upa, geometry) %>%
   mutate(umf = ifelse(is.na(umf), "team", umf),
          upa = ifelse(is.na(upa), "team", upa))
 locations_in_upas %>%
@@ -64,20 +64,16 @@ locations_in_upas %>%
 
 # create buffers:
 buffer_250m = st_buffer(locations_in_upas, 0.25) %>%
-  select(-c(longitude, latitude, umf, upa))
+  dplyr::select(-c(longitude, latitude, umf, upa))
 buffer_500m = st_buffer(locations_in_upas, 0.5) %>%
-  select(-c(longitude, latitude, umf, upa))
+  dplyr::select(-c(longitude, latitude, umf, upa))
 plot(buffer_250m)
 plot(buffer_500m)
 
 # read tree data and selected only logged trees
-trees <- read_csv("/home/elildojr/Documents/r/primates-and-trees/jamari_trees/all_trees.csv")
+trees <- read_csv(here("data", "all_trees_updated_feb2022.csv"))
 trees <- trees %>%
-  filter(status == "explored")%>%
-  rename(umf = UMF,
-         upa = UPA) %>%
-  mutate(umf = tolower(umf),
-         upa = tolower(upa))
+  filter(status == "explored")
 
 # convert to shapefile
 trees_geo <- st_as_sf(trees, coords=c("lon","lat"))
@@ -195,8 +191,8 @@ saveRDS(locations_and_years, here("data", "logging_intensity_multi_year.rds"))
 
 # an alternative that was not needed
 #harvest500 <- harvest %>% 
-#  select(-intensity_250) %>%
+#  dplyr::select(-intensity_250) %>%
 #  pivot_wider(names_from = "year", values_from = intensity_500 ) %>%
-#  select(`2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`, `NA`) %>%
+#  dplyr::select(`2011`, `2012`, `2013`, `2014`, `2015`, `2016`, `2017`, `2018`, `2019`, `NA`) %>%
 #  print(n=Inf)
 

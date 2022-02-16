@@ -24,7 +24,8 @@ library(spDataLarge)
 #-----UPA-01
 
 # read pre-harvest shapefile
-JAM1_UPA01 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2010_UPA1/UPA_1_Arvores.shp")
+#JAM1_UPA01 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2010_UPA1/UPA_1_Arvores.shp")
+JAM1_UPA01 <- st_read("/media/elildojr/elildojr/Dados-2021-12-20/gis/shp/rondonia/Shapes - SFB/UMFI_ArvoresAbatidas/JAM1_UPA01_wgs84.shp")
 
 # convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA01 <- st_transform(JAM1_UPA01, 4326)
@@ -36,20 +37,20 @@ JAM1_UPA01 <- bind_cols(JAM1_UPA01,coords)
 # fix column names and formats
 names(JAM1_UPA01) # check names
 JAM1_UPA01 <- JAM1_UPA01 %>%
-  rename(id_arvore = ARV) %>%
+  rename(id_arvore = Árv,
+         especie_pre = Nome_Cient,
+         nome_comum = Nome_Vulga,
+         dap = DAP,
+         area_basal = Área_Basa,
+         altura = Altura,
+         volume = Volume) %>%
   mutate(umf = "umf-1",
          upa = "upa-1",
-         especie_pre = NA,
-         nome_comum = NA,
-         dap = NA,
-         area_basal = NA,
-         altura = NA,
-         volume = NA,
          status = NA) %>%
-  select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
+  dplyr::select(umf, upa, id_arvore, lat, lon, especie_pre, nome_comum, dap, area_basal, altura, 
          volume, status)
 head(JAM1_UPA01)
-n_before <- dim(JAM1_UPA01)[1]
+
 
 # post-harvest
 jam1_upa01 <- read_csv("/home/elildojr/Documents/gis/jamari/sfb/scc_reports/UMF_I/UMF1_UPA1_Campos_Movimentação.csv")
@@ -69,23 +70,17 @@ jam1_upa01
 
 # join pre and post-harvest
 jam1_upa01 <- left_join(JAM1_UPA01, jam1_upa01, by = "id_arvore") %>%
-  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
+  dplyr::select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, 
          status, volume, data_corte, n_toras, volume_toras,
          lat, lon)
 jam1_upa01
 
-# check trees were lost or duplicated
-n_before 
-n_after <- dim(jam1_upa01)[1]
-n_before-n_after
-
-
-# check if UPA was harvested in more than a single year
-table(jam1_upa01$ano_exploracao)
-
 # check if dap is in metres
 summary(jam1_upa01$dap, na.rm=TRUE)
+
+# compare especie_pre and especie_pos to see if left_join was correct
+print(jam1_upa01[!is.na(jam1_upa01$especie_pos),], n=30)
 
 # check map
 options(sf_max.plot=1)
@@ -95,7 +90,8 @@ plot(jam1_upa01)
 #-----UPA-02
 
 # read pre-harvest shapefile
-JAM1_UPA02 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2011_UPA2/UPA_2_Arvores.shp")
+#JAM1_UPA02 <- st_read("/home/elildojr/Documents/gis/jamari/sfb/tree_shapefiles/UMF_I/2011_UPA2/UPA_2_Arvores.shp")
+JAM1_UPA02 <- st_read("/media/elildojr/elildojr/Dados-2021-12-20/gis/shp/rondonia/Shapes - SFB/UMFI_ArvoresAbatidas/JAM1_UPA02_wgs84.shp")
 
 # convert from utm to decimal degrees and add lat lon columns
 JAM1_UPA02 <- st_transform(JAM1_UPA02, 4326)
@@ -118,7 +114,7 @@ JAM1_UPA02 <- JAM1_UPA02 %>%
          altura = NA,
          volume = NA,
          status = NA) %>%
-  select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, 
+  dplyr::select(umf, upa, id_arvore, especie_pre, nome_comum, lat, lon, dap, area_basal, altura, 
          volume, status)
 
 n_before <- dim(JAM1_UPA02)[1]
@@ -141,7 +137,7 @@ jam1_upa02
 
 # join pre and post-harvest
 jam1_upa02 <- left_join(JAM1_UPA02, jam1_upa02, by = "id_arvore") %>%
-  select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
+  dplyr::select(umf, upa, ano_exploracao, id_arvore, especie_pre, especie_pos, nome_comum,
          dap, area_basal, altura, volume,
          status, data_corte, n_toras, volume_toras,
          lat, lon)

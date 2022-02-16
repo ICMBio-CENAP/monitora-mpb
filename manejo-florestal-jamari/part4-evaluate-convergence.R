@@ -27,15 +27,18 @@ list.files(model.directory, patt="model_pa_") #presence-absence models
 # convergence statistics improve
 
 nChains = 2
-samples = 500
+samples = 250
 thin = 1 # try with thin = 1, thin = 10, thin = 100, etc.
 #filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #load(filename)
-load("/home/elildojr/Documents/r/monitora-mpb/models/model_pa_chains_2_samples_250_thin_1")
+models <- load("/home/elildojr/Documents/r/monitora-mpb/models/model_abu_chains_2_samples_250_thin_1")
+models
+
+m <- model.abu
 
 # extract posterior distribution and convert into a coda object
 # Hmsc uses coda to examine convergence, other operations are conducted straight from the Hmsc object
-mpost <- convertToCodaObject(model.pa)
+mpost <- convertToCodaObject(m)
 
 # explore MCMC convergence for beta-parameters (species niches),
 # V-parameters (variation in species niches),

@@ -42,3 +42,7 @@ Transformations suggested for continuous variables:
 # PHYLOGENY (P)
 The data does not include a phylogenetic tree
 
+# HOW COVARIATES WERE PREPARED
+merge_tree_shapefiles-alternative-take.R
+jamari_get_covariates.R
+part1-prep-data.R

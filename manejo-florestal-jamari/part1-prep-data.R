@@ -111,7 +111,7 @@ jamari <- jamari %>%
 
 ##----- S: study design -----
 S <- jamari %>% distinct(placename, sampling_event, longitude, latitude) %>%
-  select(placename, sampling_event, longitude, latitude)
+  dplyr::select(placename, sampling_event, longitude, latitude)
 # NB! some coordinates are wrong, don't forget to fix it later!!!
 # NB! if we decide to run static analysis, we will have to simplify S so that there is a single entry per site
 #S <- distinct(S, placename, longitude, latitude)
@@ -137,14 +137,14 @@ S
 #  rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
 #  filter(placename %in% S$placename) %>%
 #  mutate(placename=as.factor(placename)) %>%
-#  select(placename, elevation, slope, dist_water, hfi)
+#  dplyr::select(placename, elevation, slope, dist_water, hfi)
 #covars
 
 covars <- readRDS(here("data", "jamari_covars_2022.rds"))
 covars
 # remove intensity because we will use a year-specific logging intensity variable
 covars <- covars %>%
-  select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500)) %>%
+  dplyr::select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500)) %>%
   mutate(dummy_variable1 = runif(nrow(covars), 0,4),
          dummy_variable2 = rnorm(nrow(covars), 0,1))
 covars
@@ -176,7 +176,7 @@ Y <- jamari %>% group_by(placename_event, bin) %>%
   pivot_wider(names_from = bin, values_from = n) %>%
   arrange(placename, sampling_event) %>% # ensure Y rows are in same order as S and X
   replace(is.na(.), 0) %>%
-  select(-c(placename, sampling_event))
+  dplyr::select(-c(placename, sampling_event))
 Y
 
 
@@ -184,7 +184,7 @@ Y
 eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date)) %>%
   mutate(effort = as.numeric(end_date - start_date)) %>%
   arrange(placename, sampling_event) %>%
-  select(placename, sampling_event, effort)
+  dplyr::select(placename, sampling_event, effort)
 eff
 # NB! if using static (not multi-year) analysis, aggregate (sum) effort from all years
 #eff <- aggregate(eff$effort, by=list(Camera.Trap.Name=eff$Camera.Trap.Name), FUN="sum")
@@ -225,7 +225,7 @@ traits <- traits %>%
          insectivore = ifelse(insectivore > 50, insectivore <- 1, insectivore <- 0),
          omnivore = ifelse(carnivore+herbivore+insectivore > 0, omnivore <- 0, omnivore <- 1),
          omnivore = ifelse(carnivore+herbivore > 0, omnivore <- 0, omnivore <- 1)) %>%
-  select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
+  dplyr::select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
   rename(body_mass = BodyMass.Value)
 
 genus_names <- colnames(Y)
@@ -244,7 +244,7 @@ TP
 #  mutate(bin = gsub("_", " ", especies)) %>%
 #  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
 #  relocate(bin, .before = especies) %>%
-#  select(-especies)
+#  dplyr::select(-especies)
 
 #species <- tibble(bin = genus_names)
 #species
@@ -295,11 +295,11 @@ dim(S); dim(X); dim(Y)
 
 # remove stuff from X
 X <- X %>%
-  select(-c(sampling_event, longitude, latitude))
+  dplyr::select(-c(sampling_event, longitude, latitude))
 
 # remove stuff from S
 S <- S %>%
-  select(-c(placename))
+  dplyr::select(-c(placename))
 
 SXY <- cbind(S,X,Y)
 

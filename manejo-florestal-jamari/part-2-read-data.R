@@ -112,8 +112,8 @@ if(is.TP){
   Tr = TP[,1:5]
   P = NULL
   # Check that the data looks as it should!
-  View(Tr)
-  View(P)
+  #View(Tr)
+  #View(P)
   # Check that the Tr data do not have missing values (they are allowed for Y but not S, X, P or Tr)
   if (any(is.na(Tr))) {
     print("Tr has NA values - not allowed for")
