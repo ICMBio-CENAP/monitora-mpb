@@ -6,3 +6,6 @@
 *.rds
 models/**
 jamari_sites.csv
+distanciaEuclidianaBarragem.txt.xml
+distanciaEuclidianaDrenagem.txt.xml
+schema.ini
