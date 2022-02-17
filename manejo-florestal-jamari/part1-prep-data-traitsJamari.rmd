@@ -12,17 +12,17 @@ knitr::opts_chunk$set(echo = TRUE)
 #Limpar o cache:
 rm(list=ls())
 #Pacotes para instalar caso necessário:
-#install.packages("ade4")
 #Chamando pacotes
 library(ade4)
 library(clue)
 library(picante)
+library(here)
 ```
 
 ## Abrir Dados
 
 ```{r dados}
-traitsMammals <- read.csv(choose.files(), head=T,  row.names=1, sep = ";")
+traitsMammals <- read.csv(here("data","traits_202006d22.csv"), head=T,  row.names=1, sep = ";")
 attach(traitsMammals)
 ```
 
