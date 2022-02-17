@@ -1,0 +1,56 @@
+---
+title: "traitsJamari"
+author: "Fernando Lima"
+date: "10/02/2022"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#Limpar o cache:
+rm(list=ls())
+#Pacotes para instalar caso necessário:
+#install.packages("ade4")
+#Chamando pacotes
+library(ade4)
+library(clue)
+library(picante)
+```
+
+## Abrir Dados
+
+```{r dados}
+traitsMammals <- read.csv(choose.files(), head=T,  row.names=1, sep = ";")
+attach(traitsMammals)
+```
+
+## Selecionar traits
+
+```{r selecao}
+tabQ <- traitsMammals$Peso
+tabN <- traitsMammals[,c("Carnivoro","Insetivoro","Frugivoro","Herbivoro","Terrestre","Fossorial")] # 10,11,12,14,15,16
+```
+
+## Verificação
+
+```{r}
+tabN
+```
+
+```{r dataPrep}
+ktab1 <- ktab.list.df(list(data.frame(tabN),data.frame(tabQ)))
+distrait <- dist.ktab(ktab1, c("N", "Q"), c("scaledBYrange"))
+
+disU <- ls_fit_ultrametric(distrait)
+treeU <- hclust2phylog(hclust(disU, "average"))
+tree<-as.phylo(treeU)
+```
+
+## Plots
+
+```{r pressure, echo=FALSE}
+plot(treeU)
+#plot(tree)
+```
