@@ -5,3 +5,4 @@
 *.csv
 *.rds
 models/**
+jamari_sites.csv
