@@ -52,6 +52,11 @@ betas %>%
 # check intensity effects
 betas %>%
   filter(grepl("intensity", parameter))
+
+# check effort effects
+betas %>%
+  filter(grepl("water", parameter))
+
                 
 # check effort effects
 betas %>%
@@ -93,6 +98,13 @@ plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # 
 
 # plot prediction for individual species given by index
 Gradient = constructGradient(m, focalVariable = "intensity_500")
+predY = predict(m, Gradient = Gradient, expected = TRUE)
+prob = c(0.25,0.5,0.75)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
+             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
+
+# plot prediction for individual species given by index
+Gradient = constructGradient(m, focalVariable = "dist_water")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,

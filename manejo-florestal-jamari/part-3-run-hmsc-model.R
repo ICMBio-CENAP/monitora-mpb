@@ -83,7 +83,7 @@ Yabu[Y == 0] <- NA
 Yabu <- log(Yabu)
 
 # XFormula and TrFormula
-XFormula <- ~ dummy_variable1 + dummy_variable2 + intensity_500 + effort
+XFormula <- ~ dist_water + intensity_500 + effort
 TrFormula <- ~ body_mass + herbivore + carnivore + insectivore + omnivore
 
 # rename X, Y and Tr for model building

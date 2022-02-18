@@ -17,8 +17,8 @@ SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:9]
-Y <- SXY[,10:26]
+X <- SXY[,4:10]
+Y <- SXY[,11:27]
 
 head(S)
 head(X)
