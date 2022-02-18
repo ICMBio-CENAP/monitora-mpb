@@ -89,7 +89,7 @@ n_sites_per_spp <- jamari %>%
 spp_to_use <- n_sites_per_spp %>% 
   filter(n >= length(unique(jamari$placename))/10) %>%
   mutate(bin = as.character(bin)) %>%
-  pull(bin) #Erro: Column `bin` can't be modified because it's a grouping variable
+  pull(bin)
 spp_to_use
 
 jamari <- jamari %>%
