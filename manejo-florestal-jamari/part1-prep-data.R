@@ -7,6 +7,8 @@ library(gsheet)
 library(TeachingDemos)
 library(ggmap)
 
+rm(list=ls())
+
 ## ---- source this file
 source(here("bin", "ahumada_codes.R"))
 source(here("bin", "fix_species_names.R"))
@@ -28,8 +30,11 @@ jamari
 # plot to check coordinates and save csv so others can get covariate values
 lat <- jamari %>% distinct(latitude) %>% summarize(mean = mean(latitude)) %>% pull()
 lon <- jamari %>% distinct(longitude) %>% summarize(mean = mean(longitude)) %>% pull()
-ph_basemap <- get_map(location=c(lon = lon, lat = lat), zoom=11, maptype = 'terrain-background', source = 'stamen')
-ggmap(ph_basemap)
+
+#Bugado
+#ph_basemap <- get_map(location=c(lon = lon, lat = lat), zoom=11, maptype = 'terrain-background', source = 'stamen')
+#ggmap(ph_basemap)
+
 jamari %>% 
   distinct(placename, latitude, longitude) %>%
   ggplot(aes(x = longitude, y = latitude)) +
@@ -88,13 +93,13 @@ n_sites_per_spp <- jamari %>%
 # keep only species recorded in > 10% of sites
 spp_to_use <- n_sites_per_spp %>% 
   filter(n >= length(unique(jamari$placename))/10) %>%
+  ungroup(bin) %>%
   mutate(bin = as.character(bin)) %>%
   pull(bin)
 spp_to_use
 
 jamari <- jamari %>%
   filter(bin %in% spp_to_use)
-
 
 # ----Create community matrix Y
 
