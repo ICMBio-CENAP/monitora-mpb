@@ -4,6 +4,8 @@ library(here)
 library(tidyverse)
 library(stringr)
 library(gsheet)
+library(TeachingDemos)
+library(ggmap)
 
 ## ---- source this file
 source(here("bin", "ahumada_codes.R"))
@@ -24,7 +26,6 @@ jamari <- left_join(images, deployments[,c("deployment_id", "placename",
 jamari
 
 # plot to check coordinates and save csv so others can get covariate values
-library(ggmap)
 lat <- jamari %>% distinct(latitude) %>% summarize(mean = mean(latitude)) %>% pull()
 lon <- jamari %>% distinct(longitude) %>% summarize(mean = mean(longitude)) %>% pull()
 ph_basemap <- get_map(location=c(lon = lon, lat = lat), zoom=11, maptype = 'terrain-background', source = 'stamen')
