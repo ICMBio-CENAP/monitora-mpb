@@ -130,18 +130,21 @@ S
 # e.g. logging status can vary across years for the same site
 # keep this in mind when creating the covariates file
 
-# as a test we will invent a dummy covariate that varies across years
-# to do this, let us letf_join S with our covars file and add the dummy variable
-#covars <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/19ndf6lf8fpaKxH8Xv1QqvUhvjYJDtSyZjg_4rIMy6Eo/edit?usp=sharing"))
-#covars <- covars %>% 
-#  rename(placename=Camera.Trap.Name, elevation=altitude, slope=declividade, dist_water=water_dist) %>%
-#  filter(placename %in% S$placename) %>%
-#  mutate(placename=as.factor(placename)) %>%
-#  dplyr::select(placename, elevation, slope, dist_water, hfi)
-#covars
-
+# read covars file
 covars <- readRDS(here("data", "jamari_covars_2022.rds"))
 covars
+
+# read distance to reainage file
+dist_water <- read_csv(here("data", "distanciaEuclidianaDrenagem_editado.txt")) %>%
+  rename(dist_water = RASTERVALU) %>%
+  select(-c(FID, longitude, latitude))
+dist_water
+
+# add dist_water to covars
+covars <- covars %>%
+  left_join(dist_water, by = "placename")
+covars
+
 # remove intensity because we will use a year-specific logging intensity variable
 covars <- covars %>%
   dplyr::select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500)) %>%
