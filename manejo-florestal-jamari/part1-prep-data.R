@@ -73,6 +73,7 @@ jamari <- jamari %>%
   filter(class == "Mammalia") %>%
   mutate(bin = factor(bin))
 
+
 #---- check and fix species IDs
 # number of records per species
 jamari %>%
@@ -140,7 +141,7 @@ S
 covars <- readRDS(here("data", "jamari_covars_2022.rds"))
 covars
 
-# read distance to reainage file
+# read distance to drainage file
 dist_water <- read_csv(here("data", "distanciaEuclidianaDrenagem_editado.txt")) %>%
   rename(dist_water = RASTERVALU) %>%
   select(-c(FID, longitude, latitude))
@@ -153,9 +154,7 @@ covars
 
 # remove intensity because we will use a year-specific logging intensity variable
 covars <- covars %>%
-  dplyr::select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500)) %>%
-  mutate(dummy_variable1 = runif(nrow(covars), 0,4),
-         dummy_variable2 = rnorm(nrow(covars), 0,1))
+  dplyr::select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500))
 covars
 
 # create X using left_join
@@ -188,6 +187,11 @@ Y <- jamari %>% group_by(placename_event, bin) %>%
   dplyr::select(-c(placename, sampling_event))
 Y
 
+# use genus as colnames for y so they match TP rows
+colnames(Y) <- as_tibble(colnames(Y)) %>%
+  separate(value, c("genus", "species")) %>%
+  pull(genus)
+
 
 # correct Y for sampling effort
 eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date)) %>%
@@ -206,54 +210,37 @@ X <- X %>%
   mutate(effort = eff$effort)
 X
 
-
 #----- TP: Traits data -----
-
-# feeding guilds: another version using EltonTraits (more recent than PanTheria)
-#traits <- read.csv("/home/elildojr/Documents/r/databases/MamFuncDat.txt", sep="\t") # read elton traits table
-#traits$genus <- gsub(" .*$", "", traits$Scientific) # Create genus column in traits
-#traits <- filter(traits, genus %in% generaToUse) # keeping only species in species.list
-#traits <- distinct(traits, genus, .keep_all=TRUE) # remove duplicates in Genus
-#write.csv(traits, here("data", "traits.csv"), row.names = FALSE)
-traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1HYNHvnZAQ3NPbR58KJZRWocaA46PPVT-AtfIIkVj4uc/edit?usp=sharing"))
-traits
-
-# Assign each species to a feeding guild
-# e.g. primary consumer, secondary consumer, omnivore
-# e.g. Oberosler et al. 2020 used:
-# carnivore (>50% of diet based on vertebrates)
-# herbivore (include grazers, browsers, granivores and frugivores, with >50% plant material)
-# insectivore (>50% invertebrates),
-# omnivore (generally both plant and animal material;
-traits <- traits %>%
-  mutate(herbivore = Diet.Fruit+Diet.Seed+Diet.PlantO,
-         herbivore <- ifelse(herbivore > 50, herbivore <- 1, herbivore <- 0),
-         carnivore = Diet.Inv+Diet.Vend+Diet.Vunk,
-         carnivore = ifelse(carnivore > 50, carnivore <- 1, carnivore <- 0),
-         insectivore = Diet.Inv,
-         insectivore = ifelse(insectivore > 50, insectivore <- 1, insectivore <- 0),
-         omnivore = ifelse(carnivore+herbivore+insectivore > 0, omnivore <- 0, omnivore <- 1),
-         omnivore = ifelse(carnivore+herbivore > 0, omnivore <- 0, omnivore <- 1)) %>%
-  dplyr::select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
-  rename(body_mass = BodyMass.Value)
-
-genus_names <- colnames(Y)
-genus_names <- word(genus_names, 1, sep = "\\ ")
-traits <- traits[match(genus_names, traits$genus),] # put rows in same order as in Y columns
-TP <- traits
+source(here("bin", "get_traits_deprecated.R"))
 TP
-# !NB bird traits missing from Elton Traits
 
+#----- Fernando Lima Traits data -----
+# note: there are some problems that must be solved before using this
+# for now lets use the TP created above
 
-#-------------- TESTE
-# if using traits from F. Lima table, skip L.159-180
-#traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
+# read F. Lima's trait data
+traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
 
-#traits <- traits %>%
-#  mutate(bin = gsub("_", " ", especies)) %>%
-#  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
-#  relocate(bin, .before = especies) %>%
-#  dplyr::select(-especies)
+# filter traits using only species in Y
+# 1st get pattern for genus in Y
+genus_pattern <- colnames(Y) %>%
+  str_sub(start = 1L, end = 4L)
+genus_pattern
+# 2nd get pattern for genus in traits and filter unique genera
+traits <- traits %>%
+  mutate(especies = str_sub(especies, start = 1L, end = 4L)) %>%
+  distinct(especies, .keep_all = TRUE)
+# 3rd now filter traits keeping only genera in Y
+traits %>% 
+  filter(especies %in% genus_pattern) # WARNING: there are species in Y without traits!!!
+
+# 4th select traits to be used
+# WARNING: pending work
+traits <- traits %>%
+  mutate(bin = gsub("_", " ", especies)) %>%
+  mutate(bin = gsub( " .*$", "", bin)) %>% # only activate if using only genera
+  relocate(bin, .before = especies) %>%
+  dplyr::select(-especies)
 
 #species <- tibble(bin = genus_names)
 #species
@@ -262,7 +249,7 @@ TP
 
 #traits <- traits[match(colnames(Y), traits$bin),] # put rows in same order as in Y columns
 #TP <- traits
-#-------------- FIM TESTE
+
 
 ##----- Save files-----
 
@@ -327,6 +314,4 @@ write.csv(TP, file=here("data", "TP.csv"), row.names = FALSE)
 #saveRDS(X, file=here("data", "X.rds")) 
 #saveRDS(Y, file=here("data", "Y.rds")) 
 #saveRDS(TP, file=here("data", "TP.rds")) 
-
-
 

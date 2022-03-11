@@ -116,15 +116,15 @@ save(models, modelnames, file = here("models", "unfitted_models"))
 
 # run models
 
-thin = 1
-samples = 250
+thin = 50
+samples = 10000
 nChains = 2
 nParallel = 2
 
 
 #for (thin in c(1,10,100,1000)){
 for (thin in c(1,10)) {
-  transient = 10*thin
+  transient = samples/2 #10*thin
   model.pa <- sampleMcmc(m1, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
   filename = file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
   save(model.pa, file=filename)

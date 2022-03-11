@@ -17,8 +17,8 @@ SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:10]
-Y <- SXY[,11:27]
+X <- SXY[,4:8]
+Y <- SXY[,9:25]
 
 head(S)
 head(X)
@@ -55,8 +55,8 @@ plot(X)
 # Proposed three X variables for model are: elevation, dist_water, logging_intensity etc
 # sampling effort is also included
 
-plot(X[, c("dummy_variable1", "dummy_variable2", "intensity_500", "effort")])
-cor(X[, c("dummy_variable1", "dummy_variable2", "intensity_500", "effort")])
+plot(X[, c("intensity_500", "effort")])
+cor(X[, c("intensity_500", "effort")])
 
 
 #Tr = droplevels(Tr[-rarespecies,])
