@@ -23,7 +23,6 @@ model.directory = file.path(localDir, "models")
 
 # We load the Hmsc package, and set the random seed, so that all
 # results from this script are reproducible.
-
 library(tidyverse)
 library(Hmsc)
 set.seed(1)
