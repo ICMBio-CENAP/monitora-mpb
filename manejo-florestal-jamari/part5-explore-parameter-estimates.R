@@ -21,10 +21,10 @@ set.seed(1)
 # you read originally the model.pa or the model.abu
 
 nChains <- 2
-samples <- 100
-thin <- 1
-#filename <- file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-#load(filename)
+samples <- 10000
+thin <- 10
+filename <- file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
+load(filename)
 m <- model.pa
 #filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #load(filename)
@@ -37,7 +37,7 @@ postBeta <- getPostEstimate(m, parName="Beta")
 postBeta
 
 # the command above provides just summaries, we want the quantiles
-post <- convertToCodaObject(model.abu)
+mpost <- convertToCodaObject(model.pa)
 print(summary(mpost$Beta))
 summary(mpost$Beta)[["quantiles"]]
 
@@ -64,7 +64,7 @@ betas %>%
 
 # check Dasyprocta responses
 betas %>%
-  filter(grepl("Dasyprocta", parameter))
+  filter(grepl("Pecari", parameter))
 
 # etc for other parameters/species...
 
@@ -100,14 +100,14 @@ plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # 
 Gradient = constructGradient(m, focalVariable = "intensity_500")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
-             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
+plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
+             showData = TRUE, main='occurrence (measure="Y")')
 
 # plot prediction for individual species given by index
 Gradient = constructGradient(m, focalVariable = "dist_water")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=6, las=1,
+plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
              showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
 
 

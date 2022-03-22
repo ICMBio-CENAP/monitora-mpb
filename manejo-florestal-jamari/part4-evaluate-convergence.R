@@ -8,6 +8,11 @@
 
 library(here)
 
+localDir = "."
+data.directory = file.path(localDir, "data")
+model.directory = file.path(localDir, "models")
+
+
 #localDir = "."
 #data.directory = file.path(localDir, "data")
 #model.directory = file.path(localDir, "models")
