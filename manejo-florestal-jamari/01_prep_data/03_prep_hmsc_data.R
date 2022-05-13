@@ -4,6 +4,7 @@
 #----- load libraries
 library(here)
 library(tidyverse)
+library(sf)
 #library(stringr)
 #library(gsheet)
 #library(TeachingDemos)
@@ -48,12 +49,178 @@ S
 # e.g. logging status can vary across years for the same site
 # keep this in mind when creating the covariates file
 
-# read covars file
-# and remove intensity as we will use a year-specific intensity variable
-#covars <- readRDS(here("manejo-florestal-jamari", "data", "jamari_covars_2022.rds")) %>%
-#  dplyr::select(-c(longitude, latitude, umf, upa, intensity_250, intensity_500))
-#covars
+# read covars file (created with 02_prep_covariate_data)
+covars <- readRDS(here("manejo-florestal-jamari", "data", "jamari_covars_2022.rds")) %>%
+  select(- c(intensity_250, intensity_500))
+covars
 #View(covars)
+
+# convert covars to shapefile
+covars_geo <- st_as_sf(covars, coords=c("longitude","latitude")) %>%
+  mutate(longitude = st_coordinates(.)[,1],
+         latitude = st_coordinates(.)[,2])
+# check CRS
+st_is_longlat(covars_geo)
+# CRS missing, so add CRS (WGS 84)
+covars_geo <- st_set_crs(covars_geo, 4326)
+st_is_longlat(covars_geo) # check
+# transform to UTM because later we will calculate distances etc in metres
+covars_geo <- st_transform(covars_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km")
+
+
+# read tree data and filter logged trees
+trees <- read_csv(here("manejo-florestal-jamari", "data", "all_trees_updated_feb2022.csv"))
+trees <- trees %>%
+  filter(status == "explored")
+
+# convert trees to shapefile
+trees_geo <- st_as_sf(trees, coords=c("lon","lat"))
+# check CRS
+st_is_longlat(trees_geo)
+# CRS missing, so add CRS (WGS 84)
+trees_geo <- st_set_crs(trees_geo, 4326)
+st_is_longlat(trees_geo) # check
+# transform to UTM because later we will calculate distances etc in metres
+trees_geo <- st_transform(trees_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km")
+
+
+# create buffers around placenames to assign logged trees to each site
+buffer_250m = st_buffer(covars_geo, 0.25) %>%
+  dplyr::select(-c(longitude, latitude, umf, upa))
+buffer_500m = st_buffer(covars_geo, 0.5) %>%
+  dplyr::select(-c(longitude, latitude, umf, upa))
+plot(buffer_250m)
+plot(buffer_500m)
+
+
+# associate trees to buffers
+trees_250m <- st_join(trees_geo, buffer_250m, join=st_within) %>%
+  filter(!is.na(placename)) %>% # remove trees outside buffers
+  st_drop_geometry()
+trees_250m
+
+trees_500m <- st_join(trees_geo, buffer_500m, join=st_within) %>%
+  filter(!is.na(placename)) %>% # remove trees outside buffers
+  st_drop_geometry()
+trees_500m
+
+# calculate basal area in m2 for each individual tree
+trees_250m <- trees_250m %>%
+  mutate(ba = pi*(dbh/2)^2 )
+trees_500m <- trees_500m %>%
+  mutate(ba = pi*(dbh/2)^2 )
+
+# sum basal area of harvested trees by location
+harvested_250 <- trees_250m %>%
+  filter(status == "explored") %>%
+  group_by(placename) %>%
+  summarise(intensity_250 = sum(ba))
+harvested_250
+
+harvested_500 <- trees_500m %>%
+  filter(status == "explored") %>%
+  group_by(placename) %>%
+  summarise(intensity_500 = sum(ba))
+harvested_500
+
+# now add harvest intensity to covars
+covars <- covars %>%
+  left_join(harvested_250, by = "placename") %>%
+  left_join(harvested_500, by = "placename") %>%
+  replace(is.na(.), 0)
+covars %>%
+  print(n=Inf)
+
+# get years in which each site was harvested
+harvested_500 <- trees_500m %>%
+  filter(status == "explored") %>%
+  group_by(placename, year_explored) %>%
+  summarise(intensity_500 = sum(ba)) %>%
+  rename(year = year_explored)
+harvested_500
+harvested_500 %>% 
+  print(n=Inf)
+
+# sum basal area of harvested trees by location and year
+harvested_250 <- trees_250m %>%
+  filter(status == "explored") %>%
+  group_by(placename, year_explored) %>%
+  summarise(intensity_250 = sum(ba)) %>%
+  rename(year = year_explored)
+harvested_250
+
+harvest <- left_join(harvested_500, harvested_250, by=c("placename", "year")) %>%
+  replace_na(list(intensity_500 = 0, intensity_250 = 0)) %>%
+  arrange(placename)
+harvest %>%
+  print(n=Inf)
+
+# some trees have been explored but do not have year explored
+# causing trouble in harvest object
+trees %>%
+  filter(status == "explored", is.na(year_explored)) %>%
+  View()
+  distinct(umf, upa)
+#umf-3 upa-01, umf-3 upa-12
+# I checked externally and they were logged in 2010 and 2018 respectively
+# so let us add this to harvest
+# 1st check which cams belong to each umf/upa
+covars %>%
+  filter(umf == "umf-3",
+         upa %in% c("upa-01", "upa-12")) %>%
+  distinct(umf, upa, placename)
+# and now fix harvest
+harvest <- harvest %>%
+  mutate(year = replace(year, placename %in% c("CT-473", "CT-512", "CT-549",
+                                               "CT-472", "CT-510", "CT-474", 
+                                               "CT-511", "CT-509", "CT-434"),
+                        2018)) %>%
+  mutate(year = replace(year, placename %in% c("CT-283", "CT-242", "CT-244",
+                                          "CT-245", "CT-282", "CT-321", 
+                                          "CT-320", "CT-204", "CT-205"),
+                        2010))
+harvest %>%
+  print(n=Inf)
+
+
+# put covars data in multi-year format for HMSC
+# to assign logging intensities to sites we must check in which year each site was logged
+# lets do this:
+
+# get location and years in which they were sampled
+locations_and_years <- S %>%
+  rename(year = sampling_event) %>%
+  mutate(year = as.numeric(year)) %>%
+  arrange(placename) %>%
+  select(-c(longitude, latitude))
+locations_and_years
+
+
+locations_and_years <- locations_and_years %>%
+  mutate(intensity_500 = as.numeric(NA),
+         intensity_250 = as.numeric(NA))
+locations_and_years
+
+
+
+# fill all columns of locations_and_years with intensity values
+for(i in 1:nrow(locations_and_years)) {
+  for(j in 1:nrow(harvest)) {
+    if(locations_and_years[i, "placename"] == harvest[j, "placename"] &
+       locations_and_years[i, "year"] >= harvest[j, "year"]) {
+      locations_and_years[j, c("intensity_500", "intensity_250")] <-
+        harvest[i, c("intensity_500", "intensity_250")]
+    } else {
+      locations_and_years[j, c("intensity_500", "intensity_250")] <- 0
+    }
+  }
+}
+locations_and_years %>%
+  print(n=Inf)
+
+
+
+############################################################################
 
 # read distance to drainage file
 dist_water <- read_csv(here("manejo-florestal-jamari", "data", "distanciaEuclidianaDrenagem_editado.txt")) %>%
@@ -62,9 +229,12 @@ dist_water <- read_csv(here("manejo-florestal-jamari", "data", "distanciaEuclidi
 dist_water
 
 # add dist_water to covars
-#covars <- covars %>%
-#  left_join(dist_water, by = "placename")
-#covars
+covars <- covars %>%
+  left_join(dist_water, by = "placename")
+covars
+
+
+############################################################################
 
 # create X using left_join
 # so that X will also have duplicated sites (as this is a multi-year study)
