@@ -1,8 +1,11 @@
 
+# Prepare covariate data for HMSC analysis
+
+
 #----- load library
 library(here)
 library(tidyverse)
-library(lubridate)
+#library(lubridate)
 #library(stringr)
 library(gsheet)
 library(sf)
@@ -11,14 +14,12 @@ library(sf)
 #source(here("bin", "ahumada_codes.R"))
 #source(here("bin", "fix_species_names.R"))
 
-#----- read data
 
-# read Jamari Wildlife Insights data from Google Drive
-deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1NByCoaEnTX6Ot2cHaB3bKClGOdT-j0iIgJOpVL_onEI/edit?usp=sharing"))
-deployments
+#---- read pre-processed data from 01_clean_camera_trap_data
+jamari <- readRDS(here("manejo-florestal-jamari", "data", "data_for_part02.rds"))
 
 # get unique locations
-locations <- deployments %>% 
+locations <- jamari %>% 
   distinct(placename, latitude, longitude)
 locations
 

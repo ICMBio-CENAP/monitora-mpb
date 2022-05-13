@@ -92,6 +92,7 @@ f.fix.species.names <- function(data)  {
   data <- data[!(data$bin==" "),] # remove empty " " rows
   data <- data[!(data$bin=="No CV Result No CV Result"),] # remove empty " " rows
   data <- data[!(data$bin=="NA NA"),] # remove empty " " rows
+  data <- data[!is.na(data$bin),]
   data <- data[!(data$bin=="Unknown Unknown"),]
   data$bin <- factor(data$bin)
   assign("dataTemp", data, envir=.GlobalEnv)

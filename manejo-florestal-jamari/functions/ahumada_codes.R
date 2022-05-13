@@ -274,7 +274,8 @@ f.separate<-function(data,thresh){
 		
 		}
 	c(1,res)
-	}
+}
+
 #test function; not usually used	
 f.test.sep<-function(cond){
 	l<-length(cond)
@@ -297,18 +298,22 @@ f.order.data<-function(data){
 	indx<-order(data$sampling_event,data$placename,data$timestamp)
 	data<-data[indx,]
 	data
-	}
+}
+
+
 #function to separate independent events, extract from the list and paste together with the data set.
 #This function removes records that are NOT images.. e.g. Sampling Date records
 f.separate.events<-function(data,thresh){
         
-  indx<-which(is.na(data$timestamp))
+  indx <- which(is.na(data$timestamp))
   if(length(indx)>0)
-    data<-data[-indx,]
-  e.data<-f.separate(data$timestamp,thresh)
-data.frame(data,grp=paste(data$sampling_event,".",data$placename,".",e.data,sep=""))
+    data <- data[-indx,]
+  e.data <- f.separate(data$timestamp, thresh)
+  data.frame(data, 
+             grp = paste(data$sampling_event, ".", data$placename, ".", e.data, sep=""))
+}
 
-	}
+
 #Simulation to explore the effect of changing the threshold on the number
 # of independent events. Thresh range is given as a sequence in mins
 f.sim.thres<-function(data,threshRange){
