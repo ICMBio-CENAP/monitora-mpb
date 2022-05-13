@@ -28,8 +28,23 @@ jamari <- left_join(images, deployments[,c("deployment_id", "placename",
 jamari
 
 # plot to check coordinates and save csv so others can get covariate values
+# get mean coordinates for study area:
 lat <- jamari %>% distinct(latitude) %>% summarize(mean = mean(latitude)) %>% pull()
 lon <- jamari %>% distinct(longitude) %>% summarize(mean = mean(longitude)) %>% pull()
+
+# extrair lat/lons unicos e colocar num data frame
+locationsJamari <- unique(cbind(as.character(jamari$placename), jamari$latitude,jamari$longitude))
+locationsJamari <- data.frame(placename = locationsJamari[,1], latitude = as.numeric(locationsJamari[,2]), longitude = as.numeric(locationsJamari[,3]))
+locationsJamari <- dplyr::arrange(locationsJamari, placename)
+head(locationsJamari)
+
+# download map
+#map <- get_map(location = c(c(lon[1],lat[1]),c(lon[2],lat[2])), zoom = 10, source = "stamen", maptype = "terrain")
+map <- get_map(location = c(c(lon[1],lat[1]),c(lon[2],lat[2])), zoom = 10, source = "stamen", maptype = "terrain")
+
+# plot camera locations
+ggmap(map, extent = "normal", maprange = T) + geom_point(data=locationsJamari, aes(x = longitude, y = latitude), colour="red", size = 0.1)
+
 
 #Bugado
 #ph_basemap <- get_map(location=c(lon = lon, lat = lat), zoom=11, maptype = 'terrain-background', source = 'stamen')
