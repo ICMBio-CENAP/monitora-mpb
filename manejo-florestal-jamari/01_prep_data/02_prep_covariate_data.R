@@ -15,68 +15,52 @@ library(sf)
 #source(here("bin", "fix_species_names.R"))
 
 
-#---- read pre-processed data from 01_clean_camera_trap_data
-jamari <- readRDS(here("manejo-florestal-jamari", "data", "data_for_part02.rds"))
+# read covars file (created with 02_prep_covariate_data)
+covars <- readRDS(here("manejo-florestal-jamari", "data", "jamari_covars_2022.rds")) %>%
+  select(- c(intensity_250, intensity_500))
+covars
+#View(covars)
 
-# get unique locations
-locations <- jamari %>% 
-  distinct(placename, latitude, longitude)
-locations
-
-
-#----- add umf and upa data
-
-# convert locations to sf (shapefile) format
-locations_geo <- st_as_sf(locations, coords=c("longitude","latitude"), remove=FALSE)
-# check CRS
-st_is_longlat(locations_geo)
-# CRS missing, so add CRS (WGS 84)
-locations_geo <- st_set_crs(locations_geo, 4326)
-st_is_longlat(locations_geo) # check
-# transform to UTM because later we will calculate distances etc in metres
-locations_geo <- st_transform(locations_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km") # transform to metric  
-
-# read umf and upa data and do some fixes
-umf_upas <- st_read("/home/elildojr/Documents/gis/jamari/sfb/umf_upas_utm.shp")
-umf_upas <- st_transform(umf_upas, "+proj=utm +zone=20S +datum=WGS84 +units=km") # transform to metric 
+# read umf and upa data
+umf_upas <- read_csv(here("manejo-florestal-jamari", "data", "sfb_controle_upa_umf_ano.csv")) 
+# some upas were logged for more than one year
+# lets assume the 2nd year is just the completion of the work
+# so select only the first row by umf_upa
 umf_upas <- umf_upas %>%
-  dplyr::select(UMF, UPA) %>%
-  rename(umf = UMF,
-         upa = UPA) %>%
-  mutate(umf = tolower(umf),
-         upa = tolower(upa),
-         umf = str_replace(umf, "iii", "3"),
-         umf = str_replace(umf, "i", "1"),
-         upa = str_replace(upa, " ", "-") )
-umf_upas %>%
+  filter(umf != "umf-2-4") %>%
+  mutate(umf_upa = paste(umf, upa, sep="_")) %>%
+  group_by(umf_upa) %>%
+  arrange(year) %>% # add a negative signal to get LAST year logged instead of 1st
+  filter(row_number()==1) %>%
+  ungroup() %>%
+  select(- umf_upa) %>%
+  rename(year_logged = year) %>%
   print(n=Inf)
 
-# join location and upa data
-locations_in_upas <- st_join(locations_geo, umf_upas, join=st_within) %>%
-  dplyr::select(placename, longitude, latitude, umf, upa, geometry) %>%
-  mutate(umf = ifelse(is.na(umf), "team", umf),
-         upa = ifelse(is.na(upa), "team", upa))
-locations_in_upas %>%
+# join covars and umf_upas
+covars <- covars %>%
+  left_join(umf_upas, by=c("umf", "upa")) %>%
   print(n=Inf)
 
+# convert covars to shapefile
+covars_geo <- st_as_sf(covars, coords=c("longitude","latitude")) %>%
+  mutate(longitude = st_coordinates(.)[,1],
+         latitude = st_coordinates(.)[,2])
+# check CRS
+st_is_longlat(covars_geo)
+# CRS missing, so add CRS (WGS 84)
+covars_geo <- st_set_crs(covars_geo, 4326)
+st_is_longlat(covars_geo) # check
+# transform to UTM because later we will calculate distances etc in metres
+covars_geo <- st_transform(covars_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km")
 
 
-#----- create buffers so that we can add tree covariates for each individual camera
-
-# create buffers:
-buffer_250m = st_buffer(locations_in_upas, 0.25) %>%
-  dplyr::select(-c(longitude, latitude, umf, upa))
-buffer_500m = st_buffer(locations_in_upas, 0.5) %>%
-  dplyr::select(-c(longitude, latitude, umf, upa))
-plot(buffer_250m)
-plot(buffer_500m)
-
-# read tree data and selected only logged trees
+# read tree data and filter logged trees
 trees <- read_csv(here("manejo-florestal-jamari", "data", "all_trees_updated_feb2022.csv"))
 trees <- trees %>%
   filter(status == "explored")
 
-# convert to shapefile
+# convert trees to shapefile
 trees_geo <- st_as_sf(trees, coords=c("lon","lat"))
 # check CRS
 st_is_longlat(trees_geo)
@@ -85,6 +69,16 @@ trees_geo <- st_set_crs(trees_geo, 4326)
 st_is_longlat(trees_geo) # check
 # transform to UTM because later we will calculate distances etc in metres
 trees_geo <- st_transform(trees_geo, "+proj=utm +zone=20S +datum=WGS84 +units=km")
+
+
+# create buffers around placenames to assign logged trees to each site
+buffer_250m = st_buffer(covars_geo, 0.25) %>%
+  dplyr::select(-c(longitude, latitude, umf, upa))
+buffer_500m = st_buffer(covars_geo, 0.5) %>%
+  dplyr::select(-c(longitude, latitude, umf, upa))
+plot(buffer_250m)
+plot(buffer_500m)
+
 
 # associate trees to buffers
 trees_250m <- st_join(trees_geo, buffer_250m, join=st_within) %>%
@@ -116,15 +110,52 @@ harvested_500 <- trees_500m %>%
   summarise(intensity_500 = sum(ba))
 harvested_500
 
-# now add harvest intensity to locations_in_upas
-locations_with_trees <- locations_in_upas %>%
-  st_drop_geometry() %>%
+# now add harvest intensity to covars
+covars <- covars %>%
   left_join(harvested_250, by = "placename") %>%
   left_join(harvested_500, by = "placename") %>%
   replace(is.na(.), 0)
-locations_with_trees %>%
+covars %>%
   print(n=Inf)
 
-# save covars file
-saveRDS(locations_with_trees, here("data", "jamari_covars_2022.rds"))
 
+# put covars data in multi-year format for HMSC
+# to assign logging intensities to sites we must check in which year each site was logged
+# lets do this:
+
+# get location and years in which they were sampled
+locations_and_years <- readRDS(here("manejo-florestal-jamari", "data", "data_for_part02.rds")) %>% distinct(placename, sampling_event, longitude, latitude) %>%
+  select(placename, sampling_event, longitude, latitude) %>%
+  mutate(sampling_event = as.numeric(sampling_event)) %>%
+  arrange(placename) %>%
+  select(-c(longitude, latitude))
+locations_and_years
+
+# join covars and locations_and_years and impute zero intensity
+# if site was sampled before it was logged
+covars <- locations_and_years %>%
+  left_join(covars, by = "placename") %>%
+  mutate(intensity_250 = case_when(year_logged > sampling_event ~ 0,
+                                   TRUE ~ intensity_250),
+         intensity_500 = case_when(year_logged > sampling_event ~ 0,
+                                   TRUE ~ intensity_500))
+covars
+
+
+
+# read distance to drainage file
+dist_water <- read_csv(here("manejo-florestal-jamari", "data", "distanciaEuclidianaDrenagem_editado.txt")) %>%
+  rename(dist_water = RASTERVALU) %>%
+  select(-c(FID, longitude, latitude))
+dist_water
+
+# add dist_water to covars
+covars <- covars %>%
+  left_join(dist_water, by = "placename")
+covars
+
+# save rdf for later use
+saveRDS(covars, here("manejo-florestal-jamari", "data", "jamari_covars_for_part_03.rds"))
+  
+
+  

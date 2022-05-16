@@ -1,3 +1,7 @@
+
+# Run HMSC model
+# note: requires the 01_read_data script to be run first
+
 # THIS SCRIPT CONSTRUCTS AND FITS HMSC MODELS FOR THE PLANT EXAMPLE (SECTION 6.7) OF THE BOOK
 # Ovaskainen, O. and Abrego, N. 2020. Joint Species Distribution Modelling - With Applications in R. Cambridge University Press.
 
@@ -10,14 +14,9 @@
 # your own system. For instance, in a MacOS system this could be
 # "~/Data/HMSC_book/Section_6_7_plants".
 
-## see your current working directory first
-getwd()
 
-# replace the lines below so that they correspond your working directory
-wd = here() # using package here does this automatically
-#setwd(wd)
-
-localDir = "."
+library(here)
+localDir = here("manejo-florestal-jamari")
 data.directory = file.path(localDir, "data")
 model.directory = file.path(localDir, "models")
 
@@ -33,8 +32,6 @@ head(X)
 head(Y)
 head(Tr)
 
-head(S)
-plot(S$longitude, S$latitude, xlab = "Longitude", ylab = "Latitude")
 
 # Study design and random levels
 xyz <- X %>%
@@ -49,12 +46,8 @@ xyz <- X %>%
   mutate(sample = as.factor(sample),
          z = as.numeric(z))
 head(xyz)
-#xyz <- xyz %>%
-#  dplyr::select(-sample)
-#head(xyz)
-#studyDesign <- data.frame(xyz)
-#studyDesign <- data.frame(sample = as.factor(xyz$sample), x = as.factor(xyz$x), 
-#                          y = as.factor(xyz$y), z = as.factor(xyz$z))
+
+
 studyDesign <- data.frame(sample = as.factor(xyz$sample))
 head(studyDesign)
 str(studyDesign)
@@ -110,19 +103,19 @@ m2 <- Hmsc(Y=Yabu, YScale = TRUE,
 models = list(m1,m2)
 modelnames = c("presence_absence","abundance_COP")
 
-save(models, modelnames, file = here("models", "unfitted_models"))
+save(models, modelnames, file = here("manejo-florestal-jamari", "models", "unfitted_models"))
 
 
 # run models
 
 thin = 50
-samples = 10000
+samples = 25000
 nChains = 2
 nParallel = 2
 
 
 #for (thin in c(1,10,100,1000)){
-for (thin in c(1,10)) {
+for (thin in c(1,10,50)) {
   transient = samples/2 #10*thin
   model.pa <- sampleMcmc(m1, thin = thin, samples = samples, transient = transient, nChains = nChains, nParallel = nParallel)
   filename = file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))

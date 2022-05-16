@@ -8,7 +8,7 @@ is.TP <- TRUE
 is.P <- FALSE
 
 # READING IN SXY: study design (S) and/or covariates (X) and species data (Y) 
-SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
+SXY <- read.csv(here("manejo-florestal-jamari", "data", "SXY.csv"), stringsAsFactors=TRUE)
 # Modify the next three lines to split your SXY file to components that relate to
 # S: study design, including units of study and their possible coordinates (named as Route_x and Route_y to indicate that they relate to the units of Route)
 # X: covariates to be used as predictors
@@ -17,8 +17,8 @@ SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:8]
-Y <- SXY[,9:25]
+X <- SXY[,4:10]
+Y <- SXY[,11:27]
 
 head(S)
 head(X)
@@ -33,8 +33,7 @@ min(colSums(Y>0))
 
 rarespecies = which(colSums(Y>0)<5)
 length(rarespecies)
-# =49 out of the original 25 species are rare in the pilot dataset. 
-# Excluding these leaves 21 species in the dataset.
+# excluding rare species if this is the case
 #Y = Y[,-rarespecies]
 
 
@@ -52,12 +51,13 @@ hist(rowSums(Y>0))
 
 plot(X)
 
-# Proposed three X variables for model are: elevation, dist_water, logging_intensity etc
-# sampling effort is also included
+# Proposed three X variables for model are: logging_intensity, dist_water and effort
 
 plot(X[, c("intensity_500", "effort")])
 cor(X[, c("intensity_500", "effort")])
 
+plot(X[, c("intensity_500", "dist_water")])
+cor(X[, c("intensity_500", "dist_water")])
 
 #Tr = droplevels(Tr[-rarespecies,])
 # Suggested pilot trait = log.BodyMass.Value
@@ -94,7 +94,7 @@ if (any(is.na(X))) {
 if(is.TP){
   # Read in the species names as rownames, not as a column of the matrix
   #TP = read.csv("TP.csv", stringsAsFactors=TRUE,row.names = 1)
-  TP = read.csv(here("data", "TP.csv"), stringsAsFactors=TRUE,row.names = 1)
+  TP = read.csv(here("manejo-florestal-jamari", "data", "TP.csv"), stringsAsFactors=TRUE,row.names = 1)
   # The script below checks if the species names in TP are identical and in the same order as in Y
   # If the script prints "species names in TP and SXY match", you are ok.
   # If it says that they do not match, you need to modify the files so that they match 

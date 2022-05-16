@@ -18,7 +18,7 @@ traits
 # omnivore (generally both plant and animal material;
 traits <- traits %>%
   mutate(herbivore = Diet.Fruit+Diet.Seed+Diet.PlantO,
-         herbivore <- ifelse(herbivore > 50, herbivore <- 1, herbivore <- 0),
+         herbivore = ifelse(herbivore > 50, herbivore <- 1, herbivore <- 0),
          carnivore = Diet.Inv+Diet.Vend+Diet.Vunk,
          carnivore = ifelse(carnivore > 50, carnivore <- 1, carnivore <- 0),
          insectivore = Diet.Inv,
