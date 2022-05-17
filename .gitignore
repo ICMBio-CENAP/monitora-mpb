@@ -4,7 +4,7 @@
 .Ruserdata
 *.csv
 *.rds
-models/**
+manejo-florestal-jamari/models/**
 jamari_sites.csv
 distanciaEuclidianaBarragem.txt.xml
 distanciaEuclidianaDrenagem.txt.xml
