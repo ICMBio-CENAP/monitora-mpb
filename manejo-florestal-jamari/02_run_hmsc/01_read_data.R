@@ -24,50 +24,27 @@ head(S)
 head(X)
 head(Y)
 
-# Check for absent (0) or ubiquitous species (1).
-range(colMeans(Y>0))
-min(colSums(Y>0))
-
-# =1: check how many species are rare and exclude these. 
-# Rare defined as < 5 plot occurrences in the pilot model, to limit processing time.
-
-rarespecies = which(colSums(Y>0)<5)
-length(rarespecies)
-# excluding rare species if this is the case
-#Y = Y[,-rarespecies]
-
-
-hist(colMeans(Y>0),main="prevalence")
+# Check for absent (0) or ubiquitous species (1)
+range(colMeans(Y > 0))
+min(colSums(Y > 0))
+hist(colMeans(Y > 0), main="prevalence")
 # Most species are rare nonetheless
-hist(as.matrix(log(Y[Y>0])),main="log abundance conditional on presence")
+hist(as.matrix(log(Y[Y > 0])), main="log abundance conditional on presence")
 
+# if species are absent in many plots - then if abundance is modeled, need a zero-inflated model. 
+# use a hurdle model: species presence-absence and log(abundance) separately
 
-# Species are absent in many plots - if abundance is modeled, need a zero-inflated model. 
-# Choice for the pilot model is a hurdle model: species presence-absence and log(abundance)
-# separately.
-
-hist(rowSums(Y>0))
-# species richness distribution across samples.
-
+# check correlation between predictors
 plot(X)
+cor(X[,4:7])
 
-# Proposed three X variables for model are: logging_intensity, dist_water and effort
+# proposed three X variables for model are: intensity_500, dist_water and effort
 
-plot(X[, c("intensity_500", "effort")])
-cor(X[, c("intensity_500", "effort")])
 
-plot(X[, c("intensity_500", "dist_water")])
-cor(X[, c("intensity_500", "dist_water")])
-
-#Tr = droplevels(Tr[-rarespecies,])
-# Suggested pilot trait = log.BodyMass.Value
-#Tr$log.BodyMass.Value = log(Tr$BodyMass.Value)
-#summary(Tr)
-
-# What is not always easy is to decide what goes to S and what to X.
-# As a general rule, include in S those variables that you think should be modelled as random effect,
+# what is not always easy is to decide what goes to S and what to X.
+# as a general rule, include in S those variables that you think should be modelled as random effect,
 # and in X those that you think should be modelled as fixed effects.
-# Don't worry if you are not sure which one is the "right choice", we will discuss this with you.
+# don't worry if you are not sure about the "right choice", we will discuss this with you.
 
 
 # check that community data are numeric and have finite numbers. If the script
@@ -109,7 +86,7 @@ if(is.TP){
   # If you don't have trait data, indicate this by Tr=NULL. 
   # If TP does not have phylogenetic data (because you don't have such data at all, or because
   # it is given in tree-format, like is the case in this example), indicate this with P=NULL 
-  Tr = TP[,1:5]
+  Tr = TP[,1:4]
   P = NULL
   # Check that the data looks as it should!
   #View(Tr)

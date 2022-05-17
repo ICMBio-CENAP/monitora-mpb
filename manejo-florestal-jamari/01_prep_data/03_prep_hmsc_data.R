@@ -4,9 +4,9 @@
 #----- load libraries
 library(here)
 library(tidyverse)
-library(sf)
+#library(sf)
 #library(stringr)
-library(gsheet)
+#library(gsheet)
 #library(TeachingDemos)
 #library(ggmap)
 
@@ -105,7 +105,9 @@ X
 source(here("manejo-florestal-jamari", "functions", "get_traits_deprecated.R"))
 TP
 TP <- TP %>%
-  mutate(body_mass = log(body_mass))
+  mutate(body_mass = log(body_mass)) %>%
+  print(n=Inf)
+ 
 
 #----- Fernando Lima Traits data -----
 #traits <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))

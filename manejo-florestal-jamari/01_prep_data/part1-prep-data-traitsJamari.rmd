@@ -22,7 +22,10 @@ library(here)
 ## Abrir Dados
 
 ```{r dados}
-traitsMammals <- read.csv(here("data","traits_202006d22.csv"), head=T,  row.names=1, sep = ";")
+#traitsMammals <- read.csv(here("data","traits_202006d22.csv"), head=T,  row.names=1, sep = ";")
+library(gsheet)
+library(tidyverse)
+traitsMammals <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/13pazl0Qvzim1kQmDtM59mCIsBoZfYppwNEq7xYtkYk0/edit?usp=sharing"))
 attach(traitsMammals)
 ```
 

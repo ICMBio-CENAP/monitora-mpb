@@ -6,9 +6,17 @@
 # wd = "C:/HMSC_book/R-scripts/Section_6_7_plants"
 # setwd(wd)
 
+
+library(here)
+library(tidyverse)
+
 localDir = "."
-data.directory = file.path(localDir, "data")
-model.directory = file.path(localDir, "models")
+#data.directory = file.path(localDir, "data")
+data.directory = here("manejo-florestal-jamari", "data")
+#model.directory = file.path(localDir, "models")
+model.directory = here("manejo-florestal-jamari", "models")
+
+
 library(Hmsc)
 set.seed(1)
 
@@ -23,12 +31,12 @@ set.seed(1)
 nChains <- 2
 samples <- 10000
 thin <- 10
-filename <- file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-load(filename)
+
+models <- load(here("manejo-florestal-jamari", "models",
+                    "model_pa_chains_2_samples_50000_thin_1"))
+models
+
 m <- model.pa
-#filename=file.path(model.directory, paste0("model_abu_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
-#load(filename)
-#m = model.abu
 
 
 #----- Beta parameters (species niches, i.e. responses to covariates)
@@ -41,7 +49,7 @@ mpost <- convertToCodaObject(model.pa)
 print(summary(mpost$Beta))
 summary(mpost$Beta)[["quantiles"]]
 
-#convert to tibble to highlight negative values
+# convert to tibble to highlight negative values
 betas <- tibble(parameter = dimnames(summary(mpost$Beta)[["quantiles"]])[[1]],
                 lower = summary(mpost$Beta)[["quantiles"]][,1],
                 mean = summary(mpost$Beta)[["quantiles"]][,3], # mean or median?
@@ -53,7 +61,7 @@ betas %>%
 betas %>%
   filter(grepl("intensity", parameter))
 
-# check effort effects
+# check water effects
 betas %>%
   filter(grepl("water", parameter))
 

@@ -9,8 +9,10 @@
 library(here)
 
 localDir = "."
-data.directory = file.path(localDir, "data")
-model.directory = file.path(localDir, "models")
+#data.directory = file.path(localDir, "data")
+data.directory = here("manejo-florestal-jamari", "data")
+#model.directory = file.path(localDir, "models")
+model.directory = here("manejo-florestal-jamari", "models")
 
 
 #localDir = "."
@@ -36,10 +38,11 @@ samples = 250
 thin = 1 # try with thin = 1, thin = 10, thin = 100, etc.
 #filename=file.path(model.directory, paste0("model_pa_chains_",as.character(nChains),"_samples_",as.character(samples),"_thin_",as.character(thin)))
 #load(filename)
-models <- load("/home/elildojr/Documents/r/monitora-mpb/models/model_abu_chains_2_samples_250_thin_1")
+models <- load(here("manejo-florestal-jamari", "models",
+                    "model_pa_chains_2_samples_50000_thin_1"))
 models
 
-m <- model.abu
+m <- model.pa
 
 # extract posterior distribution and convert into a coda object
 # Hmsc uses coda to examine convergence, other operations are conducted straight from the Hmsc object
