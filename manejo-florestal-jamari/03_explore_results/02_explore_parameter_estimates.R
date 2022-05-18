@@ -4,6 +4,7 @@
 library(here)
 library(tidyverse)
 library(Hmsc)
+library(corrplot)
 set.seed(1)
 
 data.directory = here("manejo-florestal-jamari", "data")
@@ -96,62 +97,126 @@ dev.off()
 Gradient <- constructGradient(m, focalVariable = "intensity_500")
 predY <- predict(m, Gradient = Gradient, expected = TRUE)
 prob <- c(0.25,0.5,0.75)
+
 plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
 
 
 # plot prediction for individual species given by index
-# to find The index for each species use m$spNames
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
+# to find The index for each species check m$spNames
+# logging intensity significantly affected Pecari, Tayassu and Dasypus
 
-# plot species richness response
-plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
-
-# plot individual species responses
+# Pecari (index = 4)
 plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
-             showData = TRUE, main='occurrence (measure="Y")')
-
-
-
-# plot prediction for individual species given by index
-Gradient = constructGradient(m, focalVariable = "dist_water")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity")
+# version without margin text
 plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
-             showData = TRUE, main='Cuniculus paca occurrence (measure="Y")')
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity", ylab = "Pecari (occurrence)",
+             showPosteriorSupport = FALSE)
 
 
-# plot prediction for individual species given by index
-Gradient = constructGradient(m, focalVariable = "intensity_500")
-predY = predict(m, Gradient = Gradient, expected = TRUE)
-prob = c(0.25,0.5,0.75)
+# Tayassu  (index = 10)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=10, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity", ylab = "Tayassu (occurrence)",
+             showPosteriorSupport = FALSE)
+
+# Dasypus  (index = 15)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=15, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity", ylab = "Dasypus (occurrence)",
+             showPosteriorSupport = FALSE)
+
+
+# effect of sampling effort
+# signigicant for Pecari, Leopardus, Nasua, Tamandua, Didelphis and Eira
+# do a multipanel plot
+
+Gradient <- constructGradient(m, focalVariable = "effort")
+predY <- predict(m, Gradient = Gradient, expected = TRUE)
+prob <- c(0.25,0.5,0.75)
+
+par(mfrow = c(3,2))
+# Pecari
+plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Dasypus (occurrence)",
+             showPosteriorSupport = FALSE)
+# Leopardus
+plotGradient(m, Gradient, pred=predY, measure="Y", index=7, las=1,
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Leopardus (occurrence)",
+             showPosteriorSupport = FALSE)
+# Nasua
 plotGradient(m, Gradient, pred=predY, measure="Y", index=9, las=1,
-             showData = TRUE, main='Nasua nasua occurrence (measure="Y")')
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Nasua (occurrence)",
+             showPosteriorSupport = FALSE)
+# Tamandua
+plotGradient(m, Gradient, pred=predY, measure="Y", index=12, las=1,
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Tamandua (occurrence)",
+             showPosteriorSupport = FALSE)
+# Didelphis
+plotGradient(m, Gradient, pred=predY, measure="Y", index=13, las=1,
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Didelphis (occurrence)",
+             showPosteriorSupport = FALSE)
+# Eira
+plotGradient(m, Gradient, pred=predY, measure="Y", index=14, las=1,
+             showData = TRUE, main='',
+             xlab = "Sampling effort (days)", ylab = "Eira (occurrence)",
+             showPosteriorSupport = FALSE)
+
 
 # save last plot as jpeg
 # ggsave only works for ggplot...
 #ggsave('nasua_vs_intensity.jpeg', here("manejo-florestal-jamari", "results"))
 
 
+# make a plot to see if species commonness or rarity affects beta for effor
+test_x <- 1*m$Y %>%
+  colMeans()/dim(m$Y)[1]
+test_y <- betas %>%
+  filter(predictor == "effort") %>%
+  pull(mean)
+dev.off()
+plot(test_x, test_y, xlab="Prevalence", ylab="beta for effort", pch=16, cex=1.5)
+
+
+
+#----- Gamma parameters (trait effects on species’ environmental responses)
+
+postGamma <- getPostEstimate(m, parName="Gamma")
+postGamma
+print(summary(mpost$Gamma))
+summary(mpost$Gamma)[["quantiles"]]
+
+# plot
+plotGamma(m, post=postGamma, param="Support", supportLevel = 0.95, covNamesNumbers = c(T,F), trNamesNumbers = c(T,F), colorLevels = 3)
+
+# convert to tibble to make it friendlier and highlight negative values
+gammas <- tibble(parameter = dimnames(summary(mpost$Gamma)[["quantiles"]])[[1]],
+                lower = summary(mpost$Gamma)[["quantiles"]][,1],
+                mean = summary(mpost$Gamma)[["quantiles"]][,3], # mean or median?
+                upper = summary(mpost$Gamma)[["quantiles"]][,5] ) %>%
+  separate(parameter, c("predictor", "trait"), sep=",") %>%
+  mutate(predictor = str_extract(predictor, m$covNames),
+         trait = str_trim(trait),
+         trait = word(trait, 1) ) %>%
+  select(trait, predictor, mean, lower, upper) %>%
+  print(n = Inf)
+
+
+
 # plot community-weighed mean values of traits given by index
+# e.g. body mass (index = 2, see m$trNames)
 Gradient = constructGradient(m, focalVariable = "intensity_500")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
 plotGradient(m, Gradient, pred=predY, measure="T", index=2, las=1,
              showData = TRUE, main='Mean body mass (measure="T")')
-
-
-
-#----- Gamma parameters (influence of environmental covariates to expected species niches)
-
-# note that species traits are scaled to zero mean
-postGamma <- getPostEstimate(m, parName="Gamma")
-postGamma
-print(summary(mpost$Gamma))
-
-# plot
-plotGamma(m, post=postGamma, param="Support", supportLevel = 0.95, covNamesNumbers = c(T,F), trNamesNumbers = c(T,F), colorLevels = 3)
 
 
 
@@ -170,6 +235,7 @@ for (r in 1:m$nr){
            col=colorRampPalette(c("blue","white","red"))(200),
            title="",type="lower",tl.col="black",tl.cex=.7, mar=c(0,0,6,0))
 }
+
 
 
 #----- variance partitioning
