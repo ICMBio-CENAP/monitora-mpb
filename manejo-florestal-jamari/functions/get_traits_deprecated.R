@@ -1,5 +1,7 @@
 #----- TP: Traits data -----
 
+library(gsheet)
+
 # feeding guilds: another version using EltonTraits (more recent than PanTheria)
 #traits <- read.csv("/home/elildojr/Documents/r/databases/MamFuncDat.txt", sep="\t") # read elton traits table
 #traits$genus <- gsub(" .*$", "", traits$Scientific) # Create genus column in traits
@@ -18,14 +20,17 @@ traits
 # omnivore (generally both plant and animal material;
 traits <- traits %>%
   mutate(herbivore = Diet.Fruit+Diet.Seed+Diet.PlantO,
-         herbivore <- ifelse(herbivore > 50, herbivore <- 1, herbivore <- 0),
-         carnivore = Diet.Inv+Diet.Vend+Diet.Vunk,
-         carnivore = ifelse(carnivore > 50, carnivore <- 1, carnivore <- 0),
-         insectivore = Diet.Inv,
-         insectivore = ifelse(insectivore > 50, insectivore <- 1, insectivore <- 0),
-         omnivore = ifelse(carnivore+herbivore+insectivore > 0, omnivore <- 0, omnivore <- 1),
-         omnivore = ifelse(carnivore+herbivore > 0, omnivore <- 0, omnivore <- 1)) %>%
-  dplyr::select(genus, herbivore, carnivore, insectivore, omnivore, BodyMass.Value) %>%
+         herbivore = ifelse(herbivore > 50, 1, 0),
+         faunivore = Diet.Inv+Diet.Vend+Diet.Vect+Diet.Vunk+Diet.Scav,
+         faunivore = ifelse(faunivore > 50, 1, 0),
+         #carnivore = Diet.Vend+Diet.Vect+Diet.Vunk+Diet.Scav,
+         #carnivore = ifelse(carnivore > 50, 1, 0),
+         #insectivore = Diet.Inv,
+         #insectivore = ifelse(insectivore > 50, 1, 0),
+         #omnivore = ifelse(carnivore+herbivore+insectivore > 1, 1, 0)
+         omnivore = ifelse(faunivore+herbivore > 1, 1, 0)
+         ) %>%
+  dplyr::select(genus, herbivore, faunivore, omnivore, BodyMass.Value) %>%
   rename(body_mass = BodyMass.Value)
 
 genus_names <- colnames(Y)

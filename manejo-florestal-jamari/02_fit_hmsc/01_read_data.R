@@ -8,7 +8,7 @@ is.TP <- TRUE
 is.P <- FALSE
 
 # READING IN SXY: study design (S) and/or covariates (X) and species data (Y) 
-SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
+SXY <- read.csv(here("manejo-florestal-jamari", "data", "SXY.csv"), stringsAsFactors=TRUE)
 # Modify the next three lines to split your SXY file to components that relate to
 # S: study design, including units of study and their possible coordinates (named as Route_x and Route_y to indicate that they relate to the units of Route)
 # X: covariates to be used as predictors
@@ -17,57 +17,34 @@ SXY <- read.csv(here("data", "SXY.csv"), stringsAsFactors=TRUE)
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:8]
-Y <- SXY[,9:25]
+X <- SXY[,4:11]
+Y <- SXY[,12:28]
 
 head(S)
 head(X)
 head(Y)
 
-# Check for absent (0) or ubiquitous species (1).
-range(colMeans(Y>0))
-min(colSums(Y>0))
-
-# =1: check how many species are rare and exclude these. 
-# Rare defined as < 5 plot occurrences in the pilot model, to limit processing time.
-
-rarespecies = which(colSums(Y>0)<5)
-length(rarespecies)
-# =49 out of the original 25 species are rare in the pilot dataset. 
-# Excluding these leaves 21 species in the dataset.
-#Y = Y[,-rarespecies]
-
-
-hist(colMeans(Y>0),main="prevalence")
+# Check for absent (0) or ubiquitous species (1)
+range(colMeans(Y > 0))
+min(colSums(Y > 0))
+hist(colMeans(Y > 0), main="prevalence")
 # Most species are rare nonetheless
-hist(as.matrix(log(Y[Y>0])),main="log abundance conditional on presence")
+hist(as.matrix(log(Y[Y > 0])), main="log abundance conditional on presence")
 
+# if species are absent in many plots - then if abundance is modeled, need a zero-inflated model. 
+# use a hurdle model: species presence-absence and log(abundance) separately
 
-# Species are absent in many plots - if abundance is modeled, need a zero-inflated model. 
-# Choice for the pilot model is a hurdle model: species presence-absence and log(abundance)
-# separately.
-
-hist(rowSums(Y>0))
-# species richness distribution across samples.
-
+# check correlation between predictors
 plot(X)
+cor(X[,4:8])
 
-# Proposed three X variables for model are: elevation, dist_water, logging_intensity etc
-# sampling effort is also included
-
-plot(X[, c("intensity_500", "effort")])
-cor(X[, c("intensity_500", "effort")])
+# proposed three X variables for model are: intensity_500, recovery_time, dist_water and effort
 
 
-#Tr = droplevels(Tr[-rarespecies,])
-# Suggested pilot trait = log.BodyMass.Value
-#Tr$log.BodyMass.Value = log(Tr$BodyMass.Value)
-#summary(Tr)
-
-# What is not always easy is to decide what goes to S and what to X.
-# As a general rule, include in S those variables that you think should be modelled as random effect,
+# what is not always easy is to decide what goes to S and what to X.
+# as a general rule, include in S those variables that you think should be modelled as random effect,
 # and in X those that you think should be modelled as fixed effects.
-# Don't worry if you are not sure which one is the "right choice", we will discuss this with you.
+# don't worry if you are not sure about the "right choice", we will discuss this with you.
 
 
 # check that community data are numeric and have finite numbers. If the script
@@ -94,7 +71,7 @@ if (any(is.na(X))) {
 if(is.TP){
   # Read in the species names as rownames, not as a column of the matrix
   #TP = read.csv("TP.csv", stringsAsFactors=TRUE,row.names = 1)
-  TP = read.csv(here("data", "TP.csv"), stringsAsFactors=TRUE,row.names = 1)
+  TP = read.csv(here("manejo-florestal-jamari", "data", "TP.csv"), stringsAsFactors=TRUE,row.names = 1)
   # The script below checks if the species names in TP are identical and in the same order as in Y
   # If the script prints "species names in TP and SXY match", you are ok.
   # If it says that they do not match, you need to modify the files so that they match 
@@ -109,7 +86,7 @@ if(is.TP){
   # If you don't have trait data, indicate this by Tr=NULL. 
   # If TP does not have phylogenetic data (because you don't have such data at all, or because
   # it is given in tree-format, like is the case in this example), indicate this with P=NULL 
-  Tr = TP[,1:5]
+  Tr = TP[,1:4]
   P = NULL
   # Check that the data looks as it should!
   #View(Tr)
