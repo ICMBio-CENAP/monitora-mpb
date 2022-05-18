@@ -1,24 +1,14 @@
 # Explore parameter estimates of models for Jamari National Forest
 
-# The preliminaries are as in script S1
-
-# Change the working directory if necessary
-# wd = "C:/HMSC_book/R-scripts/Section_6_7_plants"
-# setwd(wd)
-
 
 library(here)
 library(tidyverse)
-
-localDir = "."
-#data.directory = file.path(localDir, "data")
-data.directory = here("manejo-florestal-jamari", "data")
-#model.directory = file.path(localDir, "models")
-model.directory = here("manejo-florestal-jamari", "models")
-
-
 library(Hmsc)
 set.seed(1)
+
+data.directory = here("manejo-florestal-jamari", "data")
+model.directory = here("manejo-florestal-jamari", "models")
+
 
 # We set the parameters of the MCMC run for which we wish to load the model object
 # You may change the thin parameter to the highest thin for which you have fitted the model, 
@@ -29,8 +19,8 @@ set.seed(1)
 # you read originally the model.pa or the model.abu
 
 nChains <- 2
-samples <- 10000
-thin <- 10
+samples <- 50000
+thin <- 250
 
 models <- load(here("manejo-florestal-jamari", "models",
                     "model_pa_chains_2_samples_50000_thin_1"))
@@ -44,51 +34,56 @@ m <- model.pa
 postBeta <- getPostEstimate(m, parName="Beta")
 postBeta
 
-# the command above provides just summaries, we want the quantiles
-mpost <- convertToCodaObject(model.pa)
+# the command above provides just summaries but we want the quantiles
+mpost <- convertToCodaObject(m)
 print(summary(mpost$Beta))
 summary(mpost$Beta)[["quantiles"]]
 
-# convert to tibble to highlight negative values
+
+# convert to tibble to make it friendlier and highlight negative values
 betas <- tibble(parameter = dimnames(summary(mpost$Beta)[["quantiles"]])[[1]],
                 lower = summary(mpost$Beta)[["quantiles"]][,1],
                 mean = summary(mpost$Beta)[["quantiles"]][,3], # mean or median?
-                upper = summary(mpost$Beta)[["quantiles"]][,5] )
-betas %>%
+                upper = summary(mpost$Beta)[["quantiles"]][,5] ) %>%
+  separate(parameter, c("predictor", "genus"), sep=",") %>%
+  mutate(predictor = str_extract(predictor, m$covNames),
+         genus = str_trim(genus),
+         genus = word(genus, 1) ) %>%
+  select(genus, predictor, mean, lower, upper) %>%
   print(n = Inf)
 
-# check intensity effects
+
+# significant betas for logging intensity:
 betas %>%
-  filter(grepl("intensity", parameter))
+  filter(predictor == "intensity_500") %>%
+  filter(lower < 0 & upper < 0 | lower > 0 & upper > 0) %>%
+  print(n = Inf)
 
-# check water effects
+# significant betas for distance to water:
 betas %>%
-  filter(grepl("water", parameter))
+  filter(predictor == "dist_water") %>%
+  filter(lower < 0 & upper < 0 | lower > 0 & upper > 0) %>%
+  print(n = Inf)
 
-                
-# check effort effects
+# significant betas for sampling effort:
 betas %>%
-  filter(grepl("effort", parameter))
+  filter(predictor == "effort") %>%
+  filter(lower < 0 & upper < 0 | lower > 0 & upper > 0) %>%
+  print(n = Inf)
 
-# check Dasyprocta responses
+
+# do this to check individual species responses:
+# (e.g., for Dasyprocta)
 betas %>%
-  filter(grepl("Pecari", parameter))
+  filter(genus == "Dasyprocta")
 
-# etc for other parameters/species...
 
-# plot
+#----- Plot Beta parameters
+
+# plot overall species vs predictor betas
 par(mar=c(6,10,1,1))
 plotBeta(m, post=postBeta, param="Support", supportLevel = 0.95, spNamesNumbers = c(T,T), covNamesNumbers = c(T,F))
 dev.off()
-
-# assess parameter estimates numerically
-post <- convertToCodaObject(m)
-print(summary(mpost$Beta))
-# get quantiles for Beta
-# NB! I still have to check how to extract values (indexes etc)
-str(mpost$Beta)
-str(mpost$Beta[1])
-
 
 
 #----- Gradient plots
@@ -105,11 +100,19 @@ plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # 
 
 
 # plot prediction for individual species given by index
+# to find The index for each species use m$spNames
 Gradient = constructGradient(m, focalVariable = "intensity_500")
 predY = predict(m, Gradient = Gradient, expected = TRUE)
 prob = c(0.25,0.5,0.75)
+
+# plot species richness response
+plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
+
+# plot individual species responses
 plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
              showData = TRUE, main='occurrence (measure="Y")')
+
+
 
 # plot prediction for individual species given by index
 Gradient = constructGradient(m, focalVariable = "dist_water")
