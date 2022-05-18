@@ -75,7 +75,7 @@ Yabu[Y == 0] <- NA
 Yabu <- log(Yabu)
 
 # XFormula and TrFormula
-XFormula <- ~ dist_water + intensity_500 + effort
+XFormula <- ~ intensity_500 + recovery_time + dist_water + effort
 TrFormula <- ~ body_mass + herbivore + faunivore + omnivore
 
 # rename X, Y and Tr for model building
@@ -85,19 +85,24 @@ rownames(TrData) <- colnames(Ypa)
 
 
 # define presence-absence model
-model.pa <- Hmsc(Y = (Y > 0), XData = XData, XFormula = XFormula,
+model_pa <- Hmsc(Y = (Y > 0), XData = XData, XFormula = XFormula,
                  TrData = TrData,
                  TrFormula = TrFormula, distr="probit",
                  studyDesign = studyDesign,
                  ranLevels = list("sample" = rL))
 
 # define abundance model
-model.abu <- Hmsc(Y = Y, XData = XData, XFormula = XFormula,
+model_abu <- Hmsc(Y = Y, XData = XData, XFormula = XFormula,
               TrData = TrData,
               TrFormula = TrFormula, distr="lognormal poisson",
               studyDesign = studyDesign,
               ranLevels = list("sample" = rL))
 
+
+# save unfitted models
+models = list("presence_absence" = model_pa, "abundance" = model_abu)
+modelnames = c("presence_absence","abundance")
+save(models, modelnames, file = file.path(here("manejo-florestal-jamari", "models"), "unfitted_models") )
 
 
 # It is always a good idea to look at the model object.
@@ -110,8 +115,8 @@ getCall(model.abu)
 head(model.pa$X)
 head(model.abu$X)
 
-thin = 250
-samples = 50000
+thin = 2
+samples = 100
 transient = samples/2
 nChains = 2
 nParallel = 2
@@ -122,13 +127,51 @@ model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples,
 save(model.pa, file=here("manejo-florestal-jamari", "models", "model_pa"))
 
 # run abundance model
-model.abu <- sampleMcmc(model.abu, thin = thin, samples = samples, 
-                        transient = transient, nChains = nChains, nParallel = nParallel)
-save(model.abu, file=here("manejo-florestal-jamari", "models", "model_abu"))
+
+#model.abu <- sampleMcmc(model.abu, thin = thin, samples = samples, 
+#                        transient = transient, nChains = nChains, nParallel = nParallel)
+#save(model.abu, file=here("manejo-florestal-jamari", "models", "model_abu"))
+for (thin in c(1,10,100,1000)){
+  transient <- 50*thin
+  models <- sampleMcmc(model_abu, thin = thin, samples = samples, transient = transient,
+                       nChains = nChains, nParallel = nParallel)
+  filename <- here("manejo-florestal-jamari", "models", paste0("model_abu_chains_",
+                                                               as.character(nChains),
+                                                               "_samples_",
+                                                               as.character(samples),
+                                                               "_thin_",
+                                                               as.character(thin)))
+  save(models, file=filename)
+}
 
 
 #################################
+
 # from fungi models template:
+
+# in the scripts below, the object models will include all six models that were discussed in the book chapter, organised as a
+# list of lists, so the models[[i]][[j]] is the model type i=1,2,3 for the choice of explanatory variables j=1,2.
+
+# The model type i=1 is a lognormal Poisson model that is fitted to the sequence count data as they are.
+# So this model will simultaneously account both for whether the species is present or not as well as how abundant
+# it is when it is present. The model types i=2 and i=3 form together a hurdle model that separates presence-absence
+# variation from abundance variation. Thus, model i=2 is a probit model that is fitted to sequences counts
+# truncated to presence-absence, whereas model i=3 is a normal model that is fitted to log-transformed sequence
+# counts conditional on presence. This means that for i=3, sampling units where the species is not present are shown in the
+# Y matrix as missing data (NA) rather than as zeros.
+
+# Concerning the choices on the explanatory variables, we always include log-transformed sequencing depth,
+# as this variable measures the total observation effort. Sequencing depth is the only variable included with j=1,
+# and thus in these models we will estimate raw co-occurrences. With j=2, we additionally include the categorical
+# variable of the decay class, and thus in these models we will estimate residual co-occurrences.
+# We note that there are also many other properties of the log than the decay class that are likely to
+# influence fungal occurrences, such as the diameter of the log. However, we ignore the other variables,
+# as the data was specifically sampled to include much variation in decay class but less variation in other properties such as diameter.
+
+# In all models, we also a random effect at the sampling unit level. The random effect models associations among the species,
+# which is what we are primarily interested about.
+
+############################
 
 # We next loop over both the model types as well as the selections of explanatory variables to fit all the six models.
 # After fitting all models, we save the models object (including the six fitted model objects) to a file

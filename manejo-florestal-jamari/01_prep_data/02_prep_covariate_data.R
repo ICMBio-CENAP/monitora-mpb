@@ -5,14 +5,7 @@
 #----- load library
 library(here)
 library(tidyverse)
-#library(lubridate)
-#library(stringr)
-#library(gsheet)
 library(sf)
-
-## ---- source this file
-#source(here("bin", "ahumada_codes.R"))
-#source(here("bin", "fix_species_names.R"))
 
 
 # read covars file (created with 02_prep_covariate_data)
@@ -141,6 +134,14 @@ covars <- locations_and_years %>%
                                    TRUE ~ intensity_500))
 covars
 
+# add recovery time (since logging) column by using difference  between sampling_event and year_logged
+# for unlogged sites/years lets impute the value of 30 (length of cutting cycle)  
+covars <- covars %>%
+  mutate(recovery_time = sampling_event-year_logged) %>%
+  mutate(recovery_time = case_when(recovery_time > 10 ~ 30,
+                                   recovery_time < 0 ~ 30,
+                                   TRUE ~ recovery_time)) %>%
+  print(n=Inf)
 
 
 # read distance to drainage file

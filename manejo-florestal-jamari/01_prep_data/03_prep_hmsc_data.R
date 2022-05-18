@@ -4,16 +4,6 @@
 #----- load libraries
 library(here)
 library(tidyverse)
-#library(sf)
-#library(stringr)
-#library(gsheet)
-#library(TeachingDemos)
-#library(ggmap)
-
-
-#---- source files
-#source(here("manejo-florestal-jamari", "functions", "ahumada_codes.R"))
-#source(here("manejo-florestal-jamari", "functions", "fix_species_names.R"))
 
 
 #---- read pre-processed data from 01_clean_camera_trap_data
@@ -83,6 +73,7 @@ Y
 
 
 # correct Y for sampling effort
+# or use effort as an additional predictor in X
 eff <- as_tibble(distinct(jamari, placename, sampling_event, start_date, end_date)) %>%
   mutate(effort = as.numeric(end_date - start_date),
          sampling_event = as.numeric(sampling_event)) %>%

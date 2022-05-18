@@ -17,8 +17,8 @@ SXY <- read.csv(here("manejo-florestal-jamari", "data", "SXY.csv"), stringsAsFac
 # If you don't have covariate data, indicate this by X=NULL
 names(SXY) # check names
 S <- SXY[,1:3]
-X <- SXY[,4:10]
-Y <- SXY[,11:27]
+X <- SXY[,4:11]
+Y <- SXY[,12:28]
 
 head(S)
 head(X)
@@ -36,9 +36,9 @@ hist(as.matrix(log(Y[Y > 0])), main="log abundance conditional on presence")
 
 # check correlation between predictors
 plot(X)
-cor(X[,4:7])
+cor(X[,4:8])
 
-# proposed three X variables for model are: intensity_500, dist_water and effort
+# proposed three X variables for model are: intensity_500, recovery_time, dist_water and effort
 
 
 # what is not always easy is to decide what goes to S and what to X.
