@@ -69,10 +69,10 @@ rL
 #rL.year = HmscRandomLevel(units = levels(year))
 
 
-Ypa <- 1*(Y>0)
-Yabu <- Y
-Yabu[Y == 0] <- NA
-Yabu <- log(Yabu)
+#Ypa <- 1*(Y>0)
+#Yabu <- Y
+#Yabu[Y == 0] <- NA
+#Yabu <- log(Yabu)
 
 # XFormula and TrFormula
 XFormula <- ~ intensity_500 + recovery_time + dist_water + effort
@@ -85,7 +85,7 @@ rownames(TrData) <- colnames(Ypa)
 
 
 # define presence-absence model
-model_pa <- Hmsc(Y = (Y > 0), XData = XData, XFormula = XFormula,
+model_pa <- Hmsc(Y = 1*(Y > 0), XData = XData, XFormula = XFormula,
                  TrData = TrData,
                  TrFormula = TrFormula, distr="probit",
                  studyDesign = studyDesign,
@@ -106,31 +106,63 @@ save(models, modelnames, file = file.path(here("manejo-florestal-jamari", "model
 
 
 # It is always a good idea to look at the model object.
-model.pa
-model.abu
+model_pa
+model_abu
 
-getCall(model.pa)
-getCall(model.abu)
+getCall(model_pa)
+getCall(model_abu)
 
-head(model.pa$X)
-head(model.abu$X)
+head(model_pa$X)
+head(model_abu$X)
 
-thin = 2
+#thin = 2
+#samples = 100
+#transient = samples/2
+#nChains = 2
+#nParallel = 2
+
+
 samples = 100
-transient = samples/2
 nChains = 2
 nParallel = 2
 
+model.directory = here("manejo-florestal-jamari", "models")
+
+# for (thin in c(1,10,100,1000)){
+for (thin in c(1,10,100)) {
+  transient = 50*thin
+  model_pa = sampleMcmc(model_pa, thin = thin, samples = samples, 
+                        transient = transient, nChains = nChains, nParallel = nParallel)
+  filename = file.path(model.directory, paste0("model_pa_chains_",
+                                               as.character(nChains),
+                                               "_samples_",
+                                               as.character(samples),
+                                               "_thin_",
+                                               as.character(thin)))
+  save(model_pa, file=filename)
+  
+  model_abu = sampleMcmc(model_abu, thin = thin, samples = samples, 
+                         transient = transient, nChains = nChains, nParallel = nParallel)
+  filename=file.path(model.directory, paste0("model_abu_chains_",
+                                             as.character(nChains),
+                                             "_samples_",
+                                             as.character(samples),
+                                             "_thin_",
+                                             as.character(thin)))
+  save(model_abu, file=filename)
+}
+
+
 # run presence-absence model
-model.pa <- sampleMcmc(model.pa, thin = thin, samples = samples, 
+model_pa <- sampleMcmc(model_pa, thin = thin, samples = samples, 
                        transient = transient, nChains = nChains, nParallel = nParallel)
-save(model.pa, file=here("manejo-florestal-jamari", "models", "model_pa"))
+save(model_pa, file=here("manejo-florestal-jamari", "models", "model_pa"))
 
 # run abundance model
 
-#model.abu <- sampleMcmc(model.abu, thin = thin, samples = samples, 
+#model_abu <- sampleMcmc(model_abu, thin = thin, samples = samples, 
 #                        transient = transient, nChains = nChains, nParallel = nParallel)
-#save(model.abu, file=here("manejo-florestal-jamari", "models", "model_abu"))
+#save(model_abu, file=here("manejo-florestal-jamari", "models", "model_abu"))
 for (thin in c(1,10,100,1000)){
   transient <- 50*thin
   models <- sampleMcmc(model_abu, thin = thin, samples = samples, transient = transient,
