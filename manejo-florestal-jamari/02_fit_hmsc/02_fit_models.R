@@ -122,15 +122,16 @@ head(model_abu$X)
 #nParallel = 2
 
 
-samples = 100
+samples = 25000
 nChains = 2
 nParallel = 2
 
 model.directory = here("manejo-florestal-jamari", "models")
 
 # for (thin in c(1,10,100,1000)){
-for (thin in c(1,10,100)) {
-  transient = 50*thin
+for (thin in c(1,10,100,1000)) {
+  samples = 50*thin
+  transient = samples/2
   model_pa = sampleMcmc(model_pa, thin = thin, samples = samples, 
                         transient = transient, nChains = nChains, nParallel = nParallel)
   filename = file.path(model.directory, paste0("model_pa_chains_",
@@ -138,8 +139,9 @@ for (thin in c(1,10,100)) {
                                                "_samples_",
                                                as.character(samples),
                                                "_thin_",
-                                               as.character(thin)))
-  save(model_pa, file=filename)
+                                               as.character(thin),
+                                               ".rds"))
+  saveRDS(model_pa, file=filename)
   
   model_abu = sampleMcmc(model_abu, thin = thin, samples = samples, 
                          transient = transient, nChains = nChains, nParallel = nParallel)
@@ -148,8 +150,9 @@ for (thin in c(1,10,100)) {
                                              "_samples_",
                                              as.character(samples),
                                              "_thin_",
-                                             as.character(thin)))
-  save(model_abu, file=filename)
+                                             as.character(thin),
+                                             ".rds"))
+  saveRDS(model_abu, file=filename)
 }
 
 

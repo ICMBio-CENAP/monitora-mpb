@@ -31,7 +31,7 @@ models <- load(here("manejo-florestal-jamari", "models",
                     "model_pa_chains_2_samples_50000_thin_1"))
 models
 
-m <- model.pa
+m <- model_pa
 m
 
 # extract posterior distribution and convert into a coda object
