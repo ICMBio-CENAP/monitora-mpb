@@ -84,9 +84,12 @@ eff
 eff <- my_order %>%
   left_join(eff, by = c("placename", "sampling_event"))
 eff
-# now we either divide Y columns by eff$effort column
-#Y <- round(Y/eff$effort, 5) # correct Y for effort
-# or instead of correcting for effort, we add effort as a covariate to X
+# now we divide Y columns by eff$effort column
+Y <- Y %>%
+  mutate_all( ~ . / eff$effort) 
+  
+
+# let us also add effort as a covariate to X
 X <- X %>%
   left_join(eff, by = c("placename", "sampling_event"))
 X

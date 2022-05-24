@@ -74,7 +74,7 @@ psrf.V
 
 # elildo's note: not sure abount the meaning of the following, check in the manual:
 # (furthermore it is not working anyway)
-partition <- createPartition(model.pa, nfolds = 2,
+partition <- createPartition(m, nfolds = 2,
                             column = "sample")
 partition
 
