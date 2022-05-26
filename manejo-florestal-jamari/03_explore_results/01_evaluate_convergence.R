@@ -27,11 +27,11 @@ samples = 50000
 thin = 250 # try with thin = 1, thin = 10, thin = 100, etc.
 #models <- load(here("manejo-florestal-jamari", "models",
 #                    "model_pa"))
-models <- load(here("manejo-florestal-jamari", "models",
-                    "model_pa_chains_2_samples_50000_thin_1"))
+models <- readRDS(here("manejo-florestal-jamari", "models",
+                    "model_abu_chains_2_samples_500_thin_10.rds"))
 models
 
-m <- model_pa
+m <- models
 m
 
 # extract posterior distribution and convert into a coda object

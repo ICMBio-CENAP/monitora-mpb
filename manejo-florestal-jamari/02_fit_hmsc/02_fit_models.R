@@ -1,7 +1,10 @@
 
-# Construct and fit HMSC models
+# Fit HMSC models
 # based on examples from book:
 # Ovaskainen, O. and Abrego, N. 2020. Joint Species Distribution Modelling - With Applications in R. Cambridge University Press
+# and also
+# appendix S2 in Tikhonov et al 2019 https://doi.org/10.1111/2041-210X.13345
+
 # note: requires the 01_read_data script to be run first
 
 # load libraries
@@ -67,7 +70,9 @@ head(xycoords)
 # set random levels
 #rL <- HmscRandomLevel(units = levels(studyDesign$site))
 rL1 <- HmscRandomLevel(units = levels(studyDesign$year))
-rL2 <- HmscRandomLevel(sData = xycoords, longlat = TRUE)
+# create regular grid of knots for spatial GPP model 
+knots <- constructKnots(sData = xycoords, knotDist = 0.1)
+rL2 <- HmscRandomLevel(sData = xycoords, sMethod = "GPP", sKnot = knots) # longlat = TRUE, 
 #rL2 <- HmscRandomLevel(sData = xycoords)# sMethod = "GPP") # spatial random level
 
 # check
@@ -76,7 +81,7 @@ rL2
 
 
 # XFormula and TrFormula
-XFormula <- ~ intensity_500 + dist_water + effort
+XFormula <- ~ intensity_500 + dist_water
 TrFormula <- ~ body_mass + herbivore + faunivore + omnivore
 
 
@@ -120,19 +125,21 @@ head(model_abu$X)
 
 
 # run short MCMC to check
-samples = 100
-thin = 10
-transient = samples/2
-nChains = 2
-nParallel = 2
+#samples = 100
+#thin = 10
+#transient = samples/2
+#nChains = 2
+#nParallel = 2
 model_pa <- sampleMcmc(model_pa, thin = thin, samples = samples, 
                        transient = transient, nChains = nChains, nParallel = nParallel)
-model_pa
-saveRDS(model_pa, file=file.path(model.directory, "model_pa_teste"))
+#model_pa
+#saveRDS(model_pa, file=file.path(model.directory, "model_pa_teste"))
+
 
 # now run it for real:
-
 model.directory = here("manejo-florestal-jamari", "models")
+nChains = 2
+nParallel = 2
 for (thin in c(1,10,100,1000)) {
   samples = 50*thin
   transient = samples/2

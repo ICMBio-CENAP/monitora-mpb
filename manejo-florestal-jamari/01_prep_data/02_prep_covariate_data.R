@@ -94,13 +94,15 @@ trees_500m <- trees_500m %>%
 harvested_250 <- trees_250m %>%
   filter(status == "explored") %>%
   group_by(placename) %>%
-  summarise(intensity_250 = sum(ba))
+  summarise(intensity_250 = sum(ba)) %>%
+  mutate(intensity_250 = intensity_250/((pi*(500^2))/10000))
 harvested_250
 
 harvested_500 <- trees_500m %>%
   filter(status == "explored") %>%
   group_by(placename) %>%
-  summarise(intensity_500 = sum(ba))
+  summarise(intensity_500 = sum(ba)) %>%
+  mutate(intensity_500 = intensity_500/((pi*(500^2))/10000))
 harvested_500
 
 # now add harvest intensity to covars

@@ -23,11 +23,11 @@ nChains <- 2
 samples <- 50000
 thin <- 250
 
-models <- load(here("manejo-florestal-jamari", "models",
-                    "model_pa_chains_2_samples_50000_thin_1"))
+models <- readRDS(here("manejo-florestal-jamari", "models",
+                       "model_abu_chains_2_samples_500_thin_10.rds"))
 models
 
-m <- model.pa
+m <- models
 
 
 #----- Beta parameters (species niches, i.e. responses to covariates)
@@ -52,6 +52,22 @@ betas <- tibble(parameter = dimnames(summary(mpost$Beta)[["quantiles"]])[[1]],
          genus = word(genus, 1) ) %>%
   select(genus, predictor, mean, lower, upper) %>%
   print(n = Inf)
+
+#-----
+# only for logging intensity:
+betas %>%
+  filter(predictor == "intensity_500") %>%
+  print(n = Inf)
+# only for water:
+betas %>%
+  filter(predictor == "dist_water") %>%
+  print(n = Inf)
+# only for effort:
+betas %>%
+  filter(predictor == "effort") %>%
+  print(n = Inf)
+
+#-----
 
 
 # significant betas for logging intensity:
@@ -128,6 +144,32 @@ plotGradient(m, Gradient, pred=predY, measure="Y", index=15, las=1,
              xlab = "Logging intensity", ylab = "Dasypus (occurrence)",
              showPosteriorSupport = FALSE)
 
+#-----
+# dist_water
+
+# plot prediction for species richness given by index
+Gradient <- constructGradient(m, focalVariable = "dist_water")
+predY <- predict(m, Gradient = Gradient, expected = TRUE)
+prob <- c(0.25,0.5,0.75)
+
+plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # prob should be q
+
+
+# plot prediction for individual species given by index
+# to find The index for each species check m$spNames
+# logging intensity significantly affected Pecari, Tayassu and Dasypus
+
+# Pecari (index = 4)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=1, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Distance to water")
+# version without margin text
+plotGradient(m, Gradient, pred=predY, measure="Y", index=1, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Distance to water", ylab = "Tapirus",
+             showPosteriorSupport = FALSE)
+
+#-----
 
 # effect of sampling effort
 # signigicant for Pecari, Leopardus, Nasua, Tamandua, Didelphis and Eira
@@ -251,6 +293,10 @@ VP$R2T$Y
 plotVariancePartitioning(m, VP) 
 # (the plot can be edited with additional parameters passed to the barplot function)
 
+# save as jpeg
+jpeg(here("manejo-florestal-jamari", "results", "VP.jpg"), width = 800, height = 600) # Open jpeg file
+plotVariancePartitioning(m, VP) 
+dev.off()
 
 
 #----- Model fit
