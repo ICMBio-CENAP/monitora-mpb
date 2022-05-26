@@ -116,6 +116,11 @@ X <- S %>%
 X
 
 
+# save csv for Figure 1 map
+fig1_map <- X %>%
+  distinct(placename, longitude, latitude, umf, upa)
+write.csv(fig1_map, "/home/elildojr/Desktop/fig1_map.csv", row.names = FALSE)
+
 # quantos sitios foram explorados ou nao explorados 
 X %>% 
   group_by(placename) %>%

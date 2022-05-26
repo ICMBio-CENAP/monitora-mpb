@@ -62,10 +62,6 @@ betas %>%
 betas %>%
   filter(predictor == "dist_water") %>%
   print(n = Inf)
-# only for effort:
-betas %>%
-  filter(predictor == "effort") %>%
-  print(n = Inf)
 
 #-----
 
@@ -121,28 +117,30 @@ plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # 
 # to find The index for each species check m$spNames
 # logging intensity significantly affected Pecari, Tayassu and Dasypus
 
-# Pecari (index = 4)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
+# Tayassu (index = 9)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=9, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
              xlab = "Logging intensity")
 # version without margin text
-plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
+plotGradient(m, Gradient, pred=predY, measure="Y", index=9, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
-             xlab = "Logging intensity", ylab = "Pecari (occurrence)",
+             xlab = "Logging intensity", ylab = "Tayassu (abundance)",
              showPosteriorSupport = FALSE)
 
 
-# Tayassu  (index = 10)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=10, las=1,
+# Dasyprocta  (index = 2)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
-             xlab = "Logging intensity", ylab = "Tayassu (occurrence)",
+             xlab = "Logging intensity", ylab = "Dasyprocta (abundance)",
              showPosteriorSupport = FALSE)
 
-# Dasypus  (index = 15)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=15, las=1,
+# save as jpeg
+jpeg(here("manejo-florestal-jamari", "results", "Dasyprocta_vs_intensity.jpg")) # Open jpeg file
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
-             xlab = "Logging intensity", ylab = "Dasypus (occurrence)",
+             xlab = "Logging intensity", ylab = "Dasyprocta (abundance)",
              showPosteriorSupport = FALSE)
+dev.off()
 
 #-----
 # dist_water
@@ -159,62 +157,21 @@ plotGradient(m, Gradient, pred=predY, measure="S", showData = TRUE, q = prob) # 
 # to find The index for each species check m$spNames
 # logging intensity significantly affected Pecari, Tayassu and Dasypus
 
-# Pecari (index = 4)
-plotGradient(m, Gradient, pred=predY, measure="Y", index=1, las=1,
+# Dasyprocta (index = 2)
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
-             xlab = "Distance to water")
-# version without margin text
-plotGradient(m, Gradient, pred=predY, measure="Y", index=1, las=1,
-             showData = TRUE, main='occurrence (measure="Y")',
-             xlab = "Distance to water", ylab = "Tapirus",
+             xlab = "Distance to water", ylab = "Dasyprocta (abundance)",
              showPosteriorSupport = FALSE)
+
+# save as jpeg
+jpeg(here("manejo-florestal-jamari", "results", "Dasyprocta_vs_water.jpg")) # Open jpeg file
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Distance to water", ylab = "Dasyprocta (abundance)",
+             showPosteriorSupport = FALSE)
+dev.off()
 
 #-----
-
-# effect of sampling effort
-# signigicant for Pecari, Leopardus, Nasua, Tamandua, Didelphis and Eira
-# do a multipanel plot
-
-Gradient <- constructGradient(m, focalVariable = "effort")
-predY <- predict(m, Gradient = Gradient, expected = TRUE)
-prob <- c(0.25,0.5,0.75)
-
-par(mfrow = c(3,2))
-# Pecari
-plotGradient(m, Gradient, pred=predY, measure="Y", index=4, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Dasypus (occurrence)",
-             showPosteriorSupport = FALSE)
-# Leopardus
-plotGradient(m, Gradient, pred=predY, measure="Y", index=7, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Leopardus (occurrence)",
-             showPosteriorSupport = FALSE)
-# Nasua
-plotGradient(m, Gradient, pred=predY, measure="Y", index=9, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Nasua (occurrence)",
-             showPosteriorSupport = FALSE)
-# Tamandua
-plotGradient(m, Gradient, pred=predY, measure="Y", index=12, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Tamandua (occurrence)",
-             showPosteriorSupport = FALSE)
-# Didelphis
-plotGradient(m, Gradient, pred=predY, measure="Y", index=13, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Didelphis (occurrence)",
-             showPosteriorSupport = FALSE)
-# Eira
-plotGradient(m, Gradient, pred=predY, measure="Y", index=14, las=1,
-             showData = TRUE, main='',
-             xlab = "Sampling effort (days)", ylab = "Eira (occurrence)",
-             showPosteriorSupport = FALSE)
-
-
-# save last plot as jpeg
-# ggsave only works for ggplot...
-#ggsave('nasua_vs_intensity.jpeg', here("manejo-florestal-jamari", "results"))
 
 
 # make a plot to see if species commonness or rarity affects beta for effor
@@ -294,7 +251,7 @@ plotVariancePartitioning(m, VP)
 # (the plot can be edited with additional parameters passed to the barplot function)
 
 # save as jpeg
-jpeg(here("manejo-florestal-jamari", "results", "VP.jpg"), width = 800, height = 600) # Open jpeg file
+jpeg(here("manejo-florestal-jamari", "results", "VP.jpg"), width = 1200, height = 600) # Open jpeg file
 plotVariancePartitioning(m, VP) 
 dev.off()
 

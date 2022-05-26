@@ -78,6 +78,18 @@ partition <- createPartition(m, nfolds = 2,
                             column = "sample")
 partition
 
+
+# model fit
+preds <- computePredictedValues(models)
+preds
+MF <- evaluateModelFit(hM = models, predY = preds)
+MF
+preds <- computePredictedValues(models, partition = partition)
+MFCV <- evaluateModelFit(hM = models, predY = preds)
+preds
+MFCV
+
+# if evaluating many models:
 MF = list()
 MFCV = list()
 for (i in 1:3){
@@ -87,3 +99,5 @@ for (i in 1:3){
                                  partition = partition)
   MFCV[[i]] = evaluateModelFit(hM = models[[i]], predY = preds)
 }
+
+
