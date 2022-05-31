@@ -13,7 +13,7 @@ model.directory = here("manejo-florestal-jamari", "models")
 # the previous script saved the finished models saved the results in
 # 'model.directory', and you can look at its content with
 list.files(model.directory) #all models
-list.files(model.directory, patt="model_pa") #presence-absence models
+list.files(model.directory, patt="model_abu") #presence-absence models
 
 # here we explore the MCMC convergence of the presence-absence model only
 # that of the abundance model could and should be explored similarly
@@ -26,9 +26,9 @@ list.files(model.directory, patt="model_pa") #presence-absence models
 #samples = 50000
 #thin = 250 # try with thin = 1, thin = 10, thin = 100, etc.
 #models <- load(here("manejo-florestal-jamari", "models",
-#                    "model_pa"))
+#                    "model_abu"))
 m <- readRDS(here("manejo-florestal-jamari", "models",
-                    "model_pa_chains_2_samples_5000_thin_100.rds"))
+                    "model_abu_chains_2_samples_5000_thin_100.rds"))
 m
 
 # extract posterior distribution and convert into a coda object
@@ -67,7 +67,7 @@ psrf.beta <- gelman.diag(mpost$Beta,multivariate=FALSE)$psrf
 hist(psrf.beta, main = "", xlab = expression("Potential scale reduction factor" ~ beta ~ ""))
 
 # save as jpeg
-jpeg(here("manejo-florestal-jamari", "results", "rhat_model_pa.jpg")) # Open jpeg file
+jpeg(here("manejo-florestal-jamari", "results", "rhat_model_abu.jpg")) # Open jpeg file
 hist(psrf.beta, main = "", xlab = expression("Potential scale reduction factor" ~ beta ~ ""))
 dev.off()
 
@@ -83,7 +83,7 @@ partition
 
 
 # model fit
-preds <- computePredictedValues(models)
+preds <- computePredictedValues(m)
 preds
 MF <- evaluateModelFit(hM = models, predY = preds)
 MF

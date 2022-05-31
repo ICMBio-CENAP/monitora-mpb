@@ -24,7 +24,7 @@ model.directory = here("manejo-florestal-jamari", "models")
 #thin <- 250
 
 m <- readRDS(here("manejo-florestal-jamari", "models",
-                       "model_pa_chains_2_samples_5000_thin_100.rds"))
+                       "model_abu_chains_2_samples_5000_thin_100.rds"))
 m
 
 #----- Beta parameters (species niches, i.e. responses to covariates)
@@ -119,11 +119,24 @@ plotGradient(m, Gradient, pred=predY, measure="Y", index=10, las=1,
              xlab = "Logging intensity", ylab = "Tayassu (occurrence)",
              showPosteriorSupport = FALSE)
 # save as jpeg
-jpeg(here("manejo-florestal-jamari", "results", "Tayassu_pa_vs_intensity.jpg"),
-     width = 600, height = 400) 
+jpeg(here("manejo-florestal-jamari", "results", "Tayassu_pa_vs_intensity.jpg")) 
 plotGradient(m, Gradient, pred=predY, measure="Y", index=10, las=1,
              showData = TRUE, main='occurrence (measure="Y")',
              xlab = "Logging intensity", ylab = "Tayassu (occurrence)",
+             showPosteriorSupport = FALSE)
+dev.off()
+
+
+# Dasyprocta
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity", ylab = "Dasyprocta (abundance)",
+             showPosteriorSupport = FALSE)
+# save as jpeg
+jpeg(here("manejo-florestal-jamari", "results", "Dasyprocta_abu_vs_intensity.jpg")) 
+plotGradient(m, Gradient, pred=predY, measure="Y", index=2, las=1,
+             showData = TRUE, main='occurrence (measure="Y")',
+             xlab = "Logging intensity", ylab = "Dasyprocta (abundance)",
              showPosteriorSupport = FALSE)
 dev.off()
 
