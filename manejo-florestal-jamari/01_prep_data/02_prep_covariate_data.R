@@ -14,6 +14,40 @@ covars <- readRDS(here("manejo-florestal-jamari", "data", "jamari_covars_2022.rd
 covars
 #View(covars)
 
+
+#################################
+# COPIED FROM ANOTHER PROJECT
+# PROBABLY REPLACE THE VERSION BELOW
+# read umf and upa shapefile
+# this file has the most updated info on year_logged
+umf_upas_shp <- st_read(here("manejo-florestal-jamari", "data", "shaura_sbf_controle_upa_umf_ano_2022Ago25.shp"))
+umf_upas_shp %>% print(n=Inf)
+options(sf_max.plot=1)
+plot(umf_upas_shp)
+
+# create cams shapefile
+cams_shp <- jamari %>%
+  distinct(placename, longitude, latitude)
+cams_shp <- st_as_sf(cams_shp, coords=c("longitude","latitude"))
+st_is_longlat(cams_shp)
+# CRS missing, so add CRS (WGS 84)
+cams_shp <- st_set_crs(cams_shp, 4326)
+st_is_longlat(cams_shp) # check
+options(sf_max.plot=1)
+plot(cams_shp)
+
+# we need to tell in which umf or upa each cam is
+# to do this associate cams_shp to umf_upas_shp
+sf_use_s2(FALSE) # this turns off the s2 processing; in theory reverts to previous sf release
+cams_shp_merged <- st_join(cams_shp, umf_upas_shp, join=st_within)
+cams_shp_merged %>% print(n=Inf)
+options(sf_max.plot=1)
+plot(cams_shp_merged)
+# transform to UTM because later we will calculate distances etc in metres
+cams_shp_merged <- st_transform(cams_shp_merged, "+proj=utm +zone=20S +datum=WGS84 +units=km")
+#################################
+
+
 # read umf and upa data
 umf_upas <- read_csv(here("manejo-florestal-jamari", "data", "sfb_controle_upa_umf_ano.csv")) 
 # some upas were logged for more than one year

@@ -18,8 +18,10 @@ source(here("manejo-florestal-jamari", "functions", "fix_species_names.R"))
 #---- read and fix data
 
 # read Jamari Wildlife Insights data from Google Drive
-deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1NByCoaEnTX6Ot2cHaB3bKClGOdT-j0iIgJOpVL_onEI/edit?usp=sharing"))
-images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1jCr2QMCE4lK78H4MW2cjJjckIQZEIdM1mAmXeZ2YtFc/edit?usp=sharing"))
+deployments <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1Rh1WosR3QgZ2-BoBMeKNbtBfMCkSIvUjw4xcWsaDs4o/edit?usp=sharing"))
+deployments
+images <- as_tibble(gsheet2tbl("https://docs.google.com/spreadsheets/d/1mEykChupnBsqL-QXBVxp4ZgXrLS3-JaYTaMb7r512SM/edit?usp=sharing"))
+images
 
 
 # merge images/deployments to get coordinates and start/end dates
@@ -40,6 +42,62 @@ jamari <- jamari %>%
          sampling_event = format(start_date, format="%Y"), 
          timestamp = as.POSIXct(timestamp)
   )
+
+
+# before checking time lag, let us check it there are weird dates
+# in photos
+jamari %>%
+  group_by(sampling_event) %>%
+  summarize(min = min(photo_date),
+            max = max(photo_date))
+
+
+# check the time lag between start date and 1st photo, last photo and end date
+# if lag is > 5 days, redefine start and end dates
+to_fix_start_and_end <- jamari %>%
+  group_by(deployment_id) %>%
+  summarise(start_date = min(start_date),
+            end_date = min(end_date),
+            min_photo_date = min(photo_date),
+            max_photo_date = max(photo_date)) %>%
+  mutate(sampling_length = as.numeric(end_date - start_date),
+         start_lag = as.numeric(min_photo_date - start_date),
+         end_lag = as.numeric(end_date - max_photo_date) ) %>%
+  #filter(start_lag > 7 | start_lag < 0 | end_lag > 7 | end_lag  < 0) %>%
+  mutate(start_date = if_else(start_lag > 5 | start_lag < 0, # condition
+                              min_photo_date-5, # true
+                              start_date), # false
+         end_date = if_else(end_lag > 5 | end_lag < 0, # condition
+                            max_photo_date+5, # true
+                            end_date)) %>% # false
+  mutate(new_start_lag = as.numeric(min_photo_date - start_date),
+         new_end_lag = as.numeric(end_date - max_photo_date)) %>%
+  print(n=Inf)
+
+to_fix_start_and_end <- to_fix_start_and_end %>%
+  select(deployment_id, start_date, end_date)
+to_fix_start_and_end
+
+# replace start and end dates in jamari using the new ones:
+jamari <- jamari %>%
+  select(-(c(start_date, end_date))) %>%
+  left_join(to_fix_start_and_end, by="deployment_id") %>%
+  print()
+
+# to check if it worked
+jamari %>%
+  group_by(deployment_id) %>%
+  summarise(start_date = min(start_date),
+            end_date = min(end_date),
+            min_photo_date = min(photo_date),
+            max_photo_date = max(photo_date)) %>%
+  mutate(sampling_length = as.numeric(end_date - start_date),
+         start_lag = as.numeric(min_photo_date - start_date),
+         end_lag = as.numeric(end_date - max_photo_date) ) %>%
+  filter(start_lag > 5 | start_lag < 0 | end_lag > 5 | end_lag  < 0) %>%
+  print(n=Inf)
+
+
 
 # select mammals only
 jamari <- jamari %>%
